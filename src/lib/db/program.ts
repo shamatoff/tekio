@@ -80,7 +80,7 @@ export async function loadActiveProgram(): Promise<ActiveProgramResult | null> {
   // Build exercise id → name map
   const exIdToName = new Map<string, string>()
   for (const de of dayExercises ?? []) {
-    exIdToName.set(de.id, (de.exercises as { name: string } | null)?.name ?? '')
+    exIdToName.set(de.id, (de.exercises as unknown as { name: string } | null)?.name ?? '')
   }
 
   // Assemble days
@@ -88,7 +88,7 @@ export async function loadActiveProgram(): Promise<ActiveProgramResult | null> {
     const exercises = (dayExercises ?? [])
       .filter(de => de.program_day_id === d.id)
       .sort((a, b) => a.sort_order - b.sort_order)
-      .map(de => (de.exercises as { name: string } | null)?.name ?? '')
+      .map(de => (de.exercises as unknown as { name: string } | null)?.name ?? '')
 
     const daySupersets = (supersets ?? [])
       .filter(ss => ss.program_day_id === d.id)
@@ -187,7 +187,7 @@ export async function saveProgram(
             exercise_b_id: dayExIdB,
           }
         })
-        .filter(Boolean)
+        .filter((x): x is NonNullable<typeof x> => x !== null)
 
       if (ssRows.length > 0) {
         await supabase.from('program_supersets').insert(ssRows)

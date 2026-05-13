@@ -36,7 +36,7 @@ export async function saveCardioEntry(entry: Omit<CardioEntry, 'id'>): Promise<C
   return {
     id: data.id,
     date: data.session_date,
-    type: CARDIO_TYPE_REVERSE[data.activity_type] ?? data.activity_type,
+    type: (CARDIO_TYPE_REVERSE[data.activity_type] ?? data.activity_type) as CardioEntry['type'],
     duration: data.duration_minutes,
     distance: data.distance_km ? Number(data.distance_km) : undefined,
     notes: data.notes ?? undefined,

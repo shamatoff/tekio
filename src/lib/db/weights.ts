@@ -53,7 +53,7 @@ export async function loadWeights(): Promise<WeightEntry[]> {
 
   const entries: WeightEntry[] = []
   for (const session of data ?? []) {
-    const exercises = (session.session_exercises ?? []) as {
+    const exercises = (session.session_exercises ?? []) as unknown as {
       id: string
       sort_order: number
       superset_group_id: string | null
