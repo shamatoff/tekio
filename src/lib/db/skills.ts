@@ -27,7 +27,7 @@ export async function loadSkills(): Promise<SkillEntry[]> {
   return (data ?? []).map(r => ({
     id: r.id,
     date: r.session_date,
-    skill: (r.skill_types as { name: string } | null)?.name ?? '',
+    skill: ((r.skill_types as unknown as { name: string } | null)?.name ?? '') as SkillEntry['skill'],
     withTrainer: r.with_trainer,
     quality: (r.quality ?? 0) as QualityRating,
     notes: r.notes ?? '',
