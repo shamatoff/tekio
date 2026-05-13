@@ -62,7 +62,7 @@ export function SkillsTab() {
             <p className="text-xs text-muted font-medium mb-1">Skill</p>
             <SmartInput
               value={skill}
-              onChange={setSkill}
+              onChange={handleSelectSkill}
               suggestions={allSkills}
               placeholder="e.g. Tennis, Swimming"
             />
