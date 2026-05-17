@@ -44,24 +44,32 @@ export function ImportPane({ onClose }: ImportPaneProps) {
         return { ...w, supersetId: supersetIdMap.get(w.supersetId)! }
       })
 
-      const newWeights: WeightEntry[] = mergeById(store.weights, inWeights)
-      const newBodyweight: BodyweightEntry[] = mergeById(store.bodyweight, (p.bodyweight as BodyweightEntry[]) || [])
-      const newCardio: CardioEntry[] = mergeById(store.cardio, (p.cardio as CardioEntry[]) || [])
-      const newMobility: MobilityEntry[] = mergeById(store.mobility, (p.mobility as MobilityEntry[]) || [])
-      const newSkills: SkillEntry[] = mergeById(store.skills, (p.skills as SkillEntry[]) || [])
-      const newDonations: DonationEntry[] = mergeById(store.donations, (p.donations as DonationEntry[]) || [])
+      // Natural key deduplication — existing data wins; imported entries only fill gaps.
+      // IDs can't be used here because imported JSON uses nanoid strings while the DB uses UUIDs.
+      const existingWKeys = new Set(store.weights.map(w => `${w.date}:${w.exercise}`))
+      const existingBDates = new Set(store.bodyweight.map(b => b.date))
+      const existingCKeys = new Set(store.cardio.map(c => `${c.date}:${c.type}`))
+      const existingMDates = new Set(store.mobility.map(m => m.date))
+      const existingSkKeys = new Set(store.skills.map(s => `${s.date}:${s.skill}`))
+      const existingDKeys = new Set(store.donations.map(d => `${d.date}:${d.type}`))
 
-      const existingWIds = new Set(store.weights.map(w => w.id))
-      const existingBIds = new Set(store.bodyweight.map(b => b.id))
-      const existingCIds = new Set(store.cardio.map(c => c.id))
-      const existingMIds = new Set(store.mobility.map(m => m.id))
-      const existingSkIds = new Set(store.skills.map(s => s.id))
-      const existingDIds = new Set(store.donations.map(d => d.id))
+      const newInWeights = inWeights.filter(w => !existingWKeys.has(`${w.date}:${w.exercise}`))
+      const newInBodyweight = ((p.bodyweight as BodyweightEntry[]) || []).filter(b => !existingBDates.has(b.date))
+      const newInCardio = ((p.cardio as CardioEntry[]) || []).filter(c => !existingCKeys.has(`${c.date}:${c.type}`))
+      const newInMobility = ((p.mobility as MobilityEntry[]) || []).filter(m => !existingMDates.has(m.date))
+      const newInSkills = ((p.skills as SkillEntry[]) || []).filter(s => !existingSkKeys.has(`${s.date}:${s.skill}`))
+      const newInDonations = ((p.donations as DonationEntry[]) || []).filter(d => !existingDKeys.has(`${d.date}:${d.type}`))
+
+      const newWeights: WeightEntry[] = mergeById(store.weights, newInWeights)
+      const newBodyweight: BodyweightEntry[] = mergeById(store.bodyweight, newInBodyweight)
+      const newCardio: CardioEntry[] = mergeById(store.cardio, newInCardio)
+      const newMobility: MobilityEntry[] = mergeById(store.mobility, newInMobility)
+      const newSkills: SkillEntry[] = mergeById(store.skills, newInSkills)
+      const newDonations: DonationEntry[] = mergeById(store.donations, newInDonations)
 
       // Weights: process date-by-date to avoid concurrent session creation race condition
-      const newWeightEntries = inWeights.filter(w => !existingWIds.has(w.id))
       const byDate = new Map<string, WeightEntry[]>()
-      for (const w of newWeightEntries) {
+      for (const w of newInWeights) {
         const arr = byDate.get(w.date) ?? []
         arr.push(w)
         byDate.set(w.date, arr)
@@ -72,11 +80,11 @@ export function ImportPane({ onClose }: ImportPaneProps) {
 
       // Other domains are safe to run in parallel (no shared session concept)
       await Promise.all([
-        ...(p.bodyweight as BodyweightEntry[]).filter(b => !existingBIds.has(b.id)).map(b => saveBodyweightEntry(b)),
-        ...(p.cardio as CardioEntry[]).filter(c => !existingCIds.has(c.id)).map(c => saveCardioEntry(c)),
-        ...(p.mobility as MobilityEntry[]).filter(m => !existingMIds.has(m.id)).map(m => saveMobilityEntry(m)),
-        ...((p.skills as SkillEntry[]) || []).filter(s => !existingSkIds.has(s.id)).map(s => saveSkillEntry(s)),
-        ...((p.donations as DonationEntry[]) || []).filter(d => !existingDIds.has(d.id)).map(d => saveDonationEntry(d)),
+        ...newInBodyweight.map(b => saveBodyweightEntry(b)),
+        ...newInCardio.map(c => saveCardioEntry(c)),
+        ...newInMobility.map(m => saveMobilityEntry(m)),
+        ...newInSkills.map(s => saveSkillEntry(s)),
+        ...newInDonations.map(d => saveDonationEntry(d)),
       ])
 
       store.setWeights(newWeights)

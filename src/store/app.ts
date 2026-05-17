@@ -85,28 +85,31 @@ export const useAppStore = create<AppStore>((set, get) => ({
 
   bootstrap: async () => {
     set({ loading: true })
-    await getOrCreateUser()
-    const [weights, activeProg, bodyweight, cardio, mobility, skills, donations] = await Promise.all([
-      loadWeights(),
-      loadActiveProgram(),
-      loadBodyweight(),
-      loadCardio(),
-      loadMobility(),
-      loadSkills(),
-      loadDonations(),
-    ])
-    set({
-      weights,
-      bodyweight,
-      cardio,
-      mobility,
-      skills,
-      donations,
-      program: activeProg?.program ?? null,
-      programId: activeProg?.programId ?? null,
-      userProgramId: activeProg?.userProgramId ?? null,
-      loading: false,
-    })
+    try {
+      await getOrCreateUser()
+      const [weights, activeProg, bodyweight, cardio, mobility, skills, donations] = await Promise.all([
+        loadWeights(),
+        loadActiveProgram(),
+        loadBodyweight(),
+        loadCardio(),
+        loadMobility(),
+        loadSkills(),
+        loadDonations(),
+      ])
+      set({
+        weights,
+        bodyweight,
+        cardio,
+        mobility,
+        skills,
+        donations,
+        program: activeProg?.program ?? null,
+        programId: activeProg?.programId ?? null,
+        userProgramId: activeProg?.userProgramId ?? null,
+      })
+    } finally {
+      set({ loading: false })
+    }
   },
 
   // Weights
