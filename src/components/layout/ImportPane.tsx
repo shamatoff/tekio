@@ -35,7 +35,16 @@ export function ImportPane({ onClose }: ImportPaneProps) {
       const p = parsed
       setLoading(true)
 
-      const newWeights: WeightEntry[] = mergeById(store.weights, (p.weights as WeightEntry[]) || [])
+      // Remap non-UUID supersetIds (e.g. nanoid strings) to proper UUIDs, preserving grouping
+      const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)
+      const supersetIdMap = new Map<string, string>()
+      const inWeights: WeightEntry[] = ((p.weights as WeightEntry[]) || []).map(w => {
+        if (!w.supersetId || isUuid(w.supersetId)) return w
+        if (!supersetIdMap.has(w.supersetId)) supersetIdMap.set(w.supersetId, crypto.randomUUID())
+        return { ...w, supersetId: supersetIdMap.get(w.supersetId)! }
+      })
+
+      const newWeights: WeightEntry[] = mergeById(store.weights, inWeights)
       const newBodyweight: BodyweightEntry[] = mergeById(store.bodyweight, (p.bodyweight as BodyweightEntry[]) || [])
       const newCardio: CardioEntry[] = mergeById(store.cardio, (p.cardio as CardioEntry[]) || [])
       const newMobility: MobilityEntry[] = mergeById(store.mobility, (p.mobility as MobilityEntry[]) || [])
@@ -50,7 +59,7 @@ export function ImportPane({ onClose }: ImportPaneProps) {
       const existingDIds = new Set(store.donations.map(d => d.id))
 
       // Weights: process date-by-date to avoid concurrent session creation race condition
-      const newWeightEntries = (p.weights as WeightEntry[]).filter(w => !existingWIds.has(w.id))
+      const newWeightEntries = inWeights.filter(w => !existingWIds.has(w.id))
       const byDate = new Map<string, WeightEntry[]>()
       for (const w of newWeightEntries) {
         const arr = byDate.get(w.date) ?? []
