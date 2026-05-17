@@ -27,19 +27,21 @@ export function ImportPane({ onClose }: ImportPaneProps) {
   }, [])
 
   async function applyData(text: string): Promise<boolean> {
+    let parsed: Record<string, unknown>
+    try { parsed = JSON.parse(text) } catch { return false }
+    if (!Array.isArray(parsed.weights) || !Array.isArray(parsed.bodyweight)) return false
+
     try {
-      const p = JSON.parse(text)
-      if (!p.weights || !p.bodyweight || !p.cardio || !p.mobility) return false
+      const p = parsed
       setLoading(true)
 
-      const newWeights: WeightEntry[] = mergeById(store.weights, p.weights || [])
-      const newBodyweight: BodyweightEntry[] = mergeById(store.bodyweight, p.bodyweight || [])
-      const newCardio: CardioEntry[] = mergeById(store.cardio, p.cardio || [])
-      const newMobility: MobilityEntry[] = mergeById(store.mobility, p.mobility || [])
-      const newSkills: SkillEntry[] = mergeById(store.skills, p.skills || [])
-      const newDonations: DonationEntry[] = mergeById(store.donations, p.donations || [])
+      const newWeights: WeightEntry[] = mergeById(store.weights, (p.weights as WeightEntry[]) || [])
+      const newBodyweight: BodyweightEntry[] = mergeById(store.bodyweight, (p.bodyweight as BodyweightEntry[]) || [])
+      const newCardio: CardioEntry[] = mergeById(store.cardio, (p.cardio as CardioEntry[]) || [])
+      const newMobility: MobilityEntry[] = mergeById(store.mobility, (p.mobility as MobilityEntry[]) || [])
+      const newSkills: SkillEntry[] = mergeById(store.skills, (p.skills as SkillEntry[]) || [])
+      const newDonations: DonationEntry[] = mergeById(store.donations, (p.donations as DonationEntry[]) || [])
 
-      // Find entries that don't exist in the store (new ones from import)
       const existingWIds = new Set(store.weights.map(w => w.id))
       const existingBIds = new Set(store.bodyweight.map(b => b.id))
       const existingCIds = new Set(store.cardio.map(c => c.id))
@@ -47,13 +49,25 @@ export function ImportPane({ onClose }: ImportPaneProps) {
       const existingSkIds = new Set(store.skills.map(s => s.id))
       const existingDIds = new Set(store.donations.map(d => d.id))
 
+      // Weights: process date-by-date to avoid concurrent session creation race condition
+      const newWeightEntries = (p.weights as WeightEntry[]).filter(w => !existingWIds.has(w.id))
+      const byDate = new Map<string, WeightEntry[]>()
+      for (const w of newWeightEntries) {
+        const arr = byDate.get(w.date) ?? []
+        arr.push(w)
+        byDate.set(w.date, arr)
+      }
+      for (const entries of byDate.values()) {
+        for (const w of entries) await saveWeightEntry(w)
+      }
+
+      // Other domains are safe to run in parallel (no shared session concept)
       await Promise.all([
-        ...p.weights.filter((w: WeightEntry) => !existingWIds.has(w.id)).map((w: WeightEntry) => saveWeightEntry(w)),
-        ...p.bodyweight.filter((b: BodyweightEntry) => !existingBIds.has(b.id)).map((b: BodyweightEntry) => saveBodyweightEntry(b)),
-        ...p.cardio.filter((c: CardioEntry) => !existingCIds.has(c.id)).map((c: CardioEntry) => saveCardioEntry(c)),
-        ...p.mobility.filter((m: MobilityEntry) => !existingMIds.has(m.id)).map((m: MobilityEntry) => saveMobilityEntry(m)),
-        ...(p.skills || []).filter((s: SkillEntry) => !existingSkIds.has(s.id)).map((s: SkillEntry) => saveSkillEntry(s)),
-        ...(p.donations || []).filter((d: DonationEntry) => !existingDIds.has(d.id)).map((d: DonationEntry) => saveDonationEntry(d)),
+        ...(p.bodyweight as BodyweightEntry[]).filter(b => !existingBIds.has(b.id)).map(b => saveBodyweightEntry(b)),
+        ...(p.cardio as CardioEntry[]).filter(c => !existingCIds.has(c.id)).map(c => saveCardioEntry(c)),
+        ...(p.mobility as MobilityEntry[]).filter(m => !existingMIds.has(m.id)).map(m => saveMobilityEntry(m)),
+        ...((p.skills as SkillEntry[]) || []).filter(s => !existingSkIds.has(s.id)).map(s => saveSkillEntry(s)),
+        ...((p.donations as DonationEntry[]) || []).filter(d => !existingDIds.has(d.id)).map(d => saveDonationEntry(d)),
       ])
 
       store.setWeights(newWeights)
