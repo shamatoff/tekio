@@ -8,7 +8,7 @@ import { saveMobilityEntry } from '../../lib/db/mobility'
 import { saveSkillEntry } from '../../lib/db/skills'
 import { saveDonationEntry } from '../../lib/db/donations'
 import { saveProgram } from '../../lib/db/program'
-import type { WeightEntry, BodyweightEntry, CardioEntry, MobilityEntry, SkillEntry, DonationEntry } from '../../types'
+import type { WeightEntry, BodyweightEntry, CardioEntry, MobilityEntry, SkillEntry, DonationEntry, Program } from '../../types'
 import { Btn } from '../ui/Button'
 
 interface ImportPaneProps {
@@ -78,7 +78,7 @@ export function ImportPane({ onClose }: ImportPaneProps) {
       store.setDonations(newDonations)
 
       if (p.program && !store.program) {
-        const result = await saveProgram(p.program)
+        const result = await saveProgram(p.program as Program)
         store.setProgram(result.program)
       }
 
