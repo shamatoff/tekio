@@ -242,3 +242,16 @@ export async function deleteProgram(programId: string, userProgramId: string): P
   await supabase.from('user_programs').delete().eq('id', userProgramId)
   await supabase.from('programs').delete().eq('id', programId)
 }
+
+export async function restartProgram(userProgramId: string, startDate: string): Promise<void> {
+  const { error } = await supabase
+    .from('user_programs')
+    .update({
+      start_date: startDate,
+      current_day_index: 0,
+      last_advanced_date: startDate,
+      status: 'active',
+    })
+    .eq('id', userProgramId)
+  if (error) throw error
+}

@@ -24,16 +24,20 @@ export const r05 = (v: number): number => Math.round(v * 2) / 2
 export interface CycleInfo {
   week: number
   isDeload: boolean
+  isComplete: boolean
 }
 
 export function cycleInfo(p: Program | null | undefined): CycleInfo {
-  if (!p?.startDate) return { week: 1, isDeload: false }
+  if (!p?.startDate) return { week: 1, isDeload: false, isComplete: false }
   const days = Math.max(
     0,
     Math.floor((new Date(today()).getTime() - new Date(p.startDate).getTime()) / 86400000),
   )
-  const wc = (Math.floor(days / 7) % (CYCLE + 1)) + 1
-  return { week: wc, isDeload: wc === CYCLE }
+  const weekCount = Math.floor(days / 7) // 0-based completed-week count
+  // Once all CYCLE weeks (including deload) have elapsed, the program is done
+  if (weekCount >= CYCLE) return { week: CYCLE, isDeload: false, isComplete: true }
+  const wc = weekCount + 1 // 1-based current week number (1 … CYCLE)
+  return { week: wc, isDeload: wc === CYCLE, isComplete: false }
 }
 
 export function isDeloadDate(startDate: string | null | undefined, d: string): boolean {
