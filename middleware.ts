@@ -25,36 +25,37 @@ const loginPage = (error = false) => `<!DOCTYPE html>
     body {
       min-height: 100svh;
       display: flex; align-items: center; justify-content: center;
-      background: #0c0c0c;
+      background: #f1f5f9;
       font-family: system-ui, -apple-system, sans-serif;
     }
     .card {
-      background: #161616;
-      border: 1px solid #272727;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
       border-radius: 14px;
       padding: 36px 32px;
       width: min(340px, calc(100vw - 32px));
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
     }
-    h1 { color: #f0f0f0; font-size: 22px; font-weight: 700; text-align: center; margin-bottom: 28px; letter-spacing: -0.3px; }
-    label { display: block; font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
+    h1 { color: #1e293b; font-size: 22px; font-weight: 700; text-align: center; margin-bottom: 28px; letter-spacing: -0.3px; }
+    label { display: block; font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
     input {
       display: block; width: 100%;
       padding: 10px 12px;
-      background: #0c0c0c; border: 1px solid #2e2e2e; border-radius: 8px;
-      color: #f0f0f0; font-size: 15px;
+      background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px;
+      color: #1e293b; font-size: 15px;
       outline: none; margin-bottom: 18px;
       transition: border-color 0.15s;
     }
-    input:focus { border-color: #555; }
+    input:focus { border-color: #6366f1; }
     button {
       width: 100%; padding: 11px;
-      background: #f0f0f0; color: #0c0c0c;
+      background: #6366f1; color: #ffffff;
       border: none; border-radius: 8px;
       font-size: 15px; font-weight: 600; cursor: pointer;
       transition: opacity 0.15s;
     }
-    button:hover { opacity: 0.85; }
-    .err { color: #f87171; font-size: 13px; text-align: center; margin-bottom: 16px; }
+    button:hover { opacity: 0.88; }
+    .err { color: #ef4444; font-size: 13px; text-align: center; margin-bottom: 16px; }
   </style>
 </head>
 <body>
