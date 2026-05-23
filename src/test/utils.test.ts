@@ -38,18 +38,18 @@ describe('cycleInfo', () => {
 
   it('returns week 1 and no deload when no program', () => {
     freezeToday('2025-01-06')
-    expect(cycleInfo(null)).toEqual({ week: 1, isDeload: false })
-    expect(cycleInfo(undefined)).toEqual({ week: 1, isDeload: false })
+    expect(cycleInfo(null)).toEqual({ week: 1, isDeload: false, isComplete: false })
+    expect(cycleInfo(undefined)).toEqual({ week: 1, isDeload: false, isComplete: false })
   })
 
   it('returns week 1 on day 0 (start date = today)', () => {
     freezeToday('2025-01-06')
-    expect(cycleInfo(makeProgram('2025-01-06'))).toEqual({ week: 1, isDeload: false })
+    expect(cycleInfo(makeProgram('2025-01-06'))).toEqual({ week: 1, isDeload: false, isComplete: false })
   })
 
   it('returns week 2 after 7 days', () => {
     freezeToday('2025-01-13')
-    expect(cycleInfo(makeProgram('2025-01-06'))).toEqual({ week: 2, isDeload: false })
+    expect(cycleInfo(makeProgram('2025-01-06'))).toEqual({ week: 2, isDeload: false, isComplete: false })
   })
 
   it('returns week 6 (deload) at exactly 5 full weeks in (day 35)', () => {
@@ -58,18 +58,29 @@ describe('cycleInfo', () => {
     const info = cycleInfo(makeProgram('2025-01-01'))
     expect(info.week).toBe(6)
     expect(info.isDeload).toBe(true)
+    expect(info.isComplete).toBe(false)
   })
 
   it('deload triggers at wc === CYCLE (6), NOT at wc > 6', () => {
     // week 5 should NOT be deload
     freezeToday('2025-01-29') // +28 days from 2025-01-01
-    expect(cycleInfo(makeProgram('2025-01-01'))).toEqual({ week: 5, isDeload: false })
+    expect(cycleInfo(makeProgram('2025-01-01'))).toEqual({ week: 5, isDeload: false, isComplete: false })
   })
 
-  it('cycle wraps back to week 1 after the deload week (7 weeks total)', () => {
-    // 7 * 7 = 49 days in → back to week 1
+  it('marks program complete after the deload week has elapsed (42+ days)', () => {
+    // 6 * 7 = 42 days in → cycle is done, no rolling
+    freezeToday('2025-02-12') // +42 days from 2025-01-01
+    const info = cycleInfo(makeProgram('2025-01-01'))
+    expect(info.isComplete).toBe(true)
+    expect(info.isDeload).toBe(false)
+  })
+
+  it('remains complete further beyond the cycle end (no wrapping)', () => {
+    // 49 days in → still complete, NOT back to week 1
     freezeToday('2025-02-19') // +49 days from 2025-01-01
-    expect(cycleInfo(makeProgram('2025-01-01'))).toEqual({ week: 1, isDeload: false })
+    const info = cycleInfo(makeProgram('2025-01-01'))
+    expect(info.isComplete).toBe(true)
+    expect(info.week).toBe(6) // stays at CYCLE, never "week 7"
   })
 })
 

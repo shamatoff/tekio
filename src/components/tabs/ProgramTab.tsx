@@ -165,9 +165,9 @@ function ProgramEditor({ draft, onSave, onCancel }: {
 export function ProgramTab() {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
-  const { program, weights, saveActiveProgram, advanceActiveProgram, removeProgram, setToast } = useAppStore()
+  const { program, weights, saveActiveProgram, advanceActiveProgram, restartActiveProgram, removeProgram, setToast } = useAppStore()
 
-  const { week, isDeload } = cycleInfo(program)
+  const { week, isDeload, isComplete } = cycleInfo(program)
   const day = program ? program.days[program.currentDayIndex % program.days.length] : null
 
   const handleSave = async (p: Program) => {
@@ -191,6 +191,15 @@ export function ProgramTab() {
       setToast(`✅ Advanced to ${program.days[newIndex].name}`)
     } catch {
       setToast('❌ Failed to advance.')
+    }
+  }
+
+  const handleRestart = async () => {
+    try {
+      await restartActiveProgram(today())
+      setToast('🔄 Program restarted — Week 1!')
+    } catch {
+      setToast('❌ Failed to restart program.')
     }
   }
 
@@ -221,8 +230,19 @@ export function ProgramTab() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Deload or cycle progress */}
-      {isDeload ? (
+      {/* Cycle complete / deload / progress */}
+      {isComplete ? (
+        <div className="bg-accent-l border-2 border-accent rounded-2xl p-4">
+          <p className="text-base font-bold text-accent mb-1">🎉 Cycle Complete!</p>
+          <p className="text-sm text-muted mb-4">
+            You've finished all {CYCLE} weeks including the deload. Choose how to continue.
+          </p>
+          <div className="flex flex-col gap-2">
+            <Btn onClick={handleRestart} className="w-full">🔄 Restart Same Program</Btn>
+            <Btn onClick={() => setEditing(true)} variant="secondary" className="w-full">✏️ Configure New Program</Btn>
+          </div>
+        </div>
+      ) : isDeload ? (
         <div className="bg-dl-bg border-2 border-dl-bd rounded-2xl p-4">
           <p className="text-base font-bold text-dl-tx mb-1.5">⚠️ Deload Week</p>
           <p className="text-sm text-dl-tx">Recovery week. All targets set to <strong>70%</strong> of regular reps.</p>

@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import type { AppState, WeightEntry, BodyweightEntry, CardioEntry, MobilityEntry, SkillEntry, DonationEntry, Program } from '../types'
 import { getOrCreateUser } from '../lib/db/user'
 import { loadWeights, saveWeightEntry, deleteWeightEntry, updateWeightEntry } from '../lib/db/weights'
-import { loadActiveProgram, saveProgram, advanceProgram, deleteProgram } from '../lib/db/program'
+import { loadActiveProgram, saveProgram, advanceProgram, deleteProgram, restartProgram } from '../lib/db/program'
 import { loadBodyweight, saveBodyweightEntry, deleteBodyweightEntry } from '../lib/db/bodyweight'
 import { loadCardio, saveCardioEntry, deleteCardioEntry } from '../lib/db/cardio'
 import { loadMobility, saveMobilityEntry, deleteMobilityEntry } from '../lib/db/mobility'
@@ -35,6 +35,7 @@ interface AppStore extends AppState {
   // Program
   saveActiveProgram: (program: Program) => Promise<void>
   advanceActiveProgram: (newIndex: number, date: string) => Promise<void>
+  restartActiveProgram: (startDate: string) => Promise<void>
   removeProgram: () => Promise<void>
 
   // Bodyweight
@@ -137,6 +138,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (!userProgramId || !program) return
     await advanceProgram(userProgramId, newIndex, date)
     set({ program: { ...program, currentDayIndex: newIndex, lastAdvancedDate: date } })
+  },
+  restartActiveProgram: async (startDate) => {
+    const { userProgramId, program } = get()
+    if (!userProgramId || !program) return
+    await restartProgram(userProgramId, startDate)
+    set({ program: { ...program, startDate, currentDayIndex: 0, lastAdvancedDate: startDate } })
   },
   removeProgram: async () => {
     const { programId, userProgramId } = get()
