@@ -6,35 +6,31 @@
  *   BASIC_AUTH_USER      Username
  *   BASIC_AUTH_PASSWORD  Password
  */
+import { next } from '@vercel/edge'
 
 export const config = {
-  matcher: '/:path*',
+  matcher: ['(.*)'],
 }
 
-export default function middleware(request: Request): Response | undefined {
-  if (process.env.BASIC_AUTH_ENABLED !== 'true') return // disabled — pass through
+export default function middleware(request: Request): Response {
+  if (process.env.BASIC_AUTH_ENABLED !== 'true') return next()
 
-  const user = process.env.BASIC_AUTH_USER
-  const pass = process.env.BASIC_AUTH_PASSWORD
+  const authUser = process.env.BASIC_AUTH_USER ?? ''
+  const authPass = process.env.BASIC_AUTH_PASSWORD ?? ''
 
-  const auth = request.headers.get('Authorization')
-  if (auth?.startsWith('Basic ')) {
-    const decoded = atob(auth.slice(6))
-    const colon = decoded.indexOf(':')
-    if (
-      colon !== -1 &&
-      decoded.slice(0, colon) === user &&
-      decoded.slice(colon + 1) === pass
-    ) {
-      return // authenticated — pass through
+  const header = request.headers.get('authorization') ?? ''
+  if (header.startsWith('Basic ')) {
+    const decoded = atob(header.slice(6))
+    const sep = decoded.indexOf(':')
+    if (sep !== -1 && decoded.slice(0, sep) === authUser && decoded.slice(sep + 1) === authPass) {
+      return next()
     }
   }
 
-  return new Response('Unauthorized', {
+  return new Response('Authentication required', {
     status: 401,
     headers: {
-      'WWW-Authenticate': 'Basic realm="Tekiō"',
-      'Content-Type': 'text/plain',
+      'WWW-Authenticate': 'Basic realm="Tekiō", charset="UTF-8"',
     },
   })
 }
