@@ -9,7 +9,7 @@
 import { next } from '@vercel/edge'
 
 export const config = {
-  matcher: ['(.*)'],
+  matcher: ['/(.*)'],
 }
 
 export default function middleware(request: Request): Response {
