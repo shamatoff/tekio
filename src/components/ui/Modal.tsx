@@ -18,11 +18,20 @@ interface ModalProps {
 export function Modal({ open, onClose, title, children }: ModalProps) {
   useEffect(() => {
     if (!open) return
+
+    // Prevent body from scrolling (including horizontal) while modal is open
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
     }
     document.addEventListener('keydown', handler)
-    return () => document.removeEventListener('keydown', handler)
+
+    return () => {
+      document.body.style.overflow = prev
+      document.removeEventListener('keydown', handler)
+    }
   }, [open, onClose])
 
   if (!open) return null
@@ -53,8 +62,8 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
           </button>
         </div>
 
-        {/* Scrollable body */}
-        <div className="overflow-y-auto flex-1 p-4">
+        {/* Scrollable body — overflow-x-hidden prevents any child from widening the panel */}
+        <div className="overflow-y-auto overflow-x-hidden flex-1 p-4">
           {children}
         </div>
       </div>
