@@ -24,7 +24,7 @@ export function HomeTab({ setTab }: HomeTabProps) {
     ? Object.fromEntries(sections.map(s => [s.sectionKey, s.sortOrder]))
     : {} as Record<string, number>
 
-  const { week, isDeload } = cycleInfo(program)
+  const { week, isDeload, isComplete } = cycleInfo(program)
   const progDay = program ? program.days[program.currentDayIndex % program.days.length] : null
 
   // Charts
@@ -80,37 +80,57 @@ export function HomeTab({ setTab }: HomeTabProps) {
     <div className="flex flex-col gap-4">
       {/* Program hero card */}
       {program ? (
-        <button
-          onClick={() => setTab('Program')}
-          className={`text-left w-full rounded-2xl p-4 ${isDeload ? 'bg-dl-bg border-2 border-dl-bd' : 'bg-primary shadow-lg'}`}
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className={`text-[11px] font-semibold uppercase tracking-wide mb-0.5 ${isDeload ? 'text-dl-tx' : 'text-white/60'}`}>
-                {isDeload ? '⚠️ Deload Week' : `Week ${week} of ${CYCLE}`}
-              </p>
-              <p className={`text-sm font-bold mb-0.5 ${isDeload ? 'text-dl-tx' : 'text-white'}`}>
-                {progDay?.name || 'No day set'}
-              </p>
-              <p className={`text-xs ${isDeload ? 'text-dl-tx' : 'text-white/50'}`}>
-                {getGrouped(progDay).map(g =>
-                  g.type === 'superset' ? `[SS: ${g.exercises.join('+')}]` : g.exercises[0]
-                ).join(' · ')}
-              </p>
+        isComplete ? (
+          <button
+            onClick={() => setTab('Program')}
+            className="text-left w-full rounded-2xl p-4 bg-accent-l border-2 border-accent"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-wide mb-0.5 text-accent">
+                  🎉 Cycle Complete
+                </p>
+                <p className="text-sm font-bold mb-0.5 text-accent">
+                  {program.name}
+                </p>
+                <p className="text-xs text-accent/70">Tap to restart or configure a new program</p>
+              </div>
+              <span className="text-2xl text-accent/60">→</span>
             </div>
-            <span className={`text-2xl ${isDeload ? 'text-dl-tx' : 'text-white/70'}`}>→</span>
-          </div>
-          {!isDeload && (
-            <div className="flex gap-1 mt-3">
-              {Array.from({ length: CYCLE }, (_, i) => (
-                <div
-                  key={i}
-                  className={`flex-1 h-0.5 rounded-full ${i < week - 1 ? 'bg-white/90' : i === week - 1 ? 'bg-white/50' : 'bg-white/15'}`}
-                />
-              ))}
+          </button>
+        ) : (
+          <button
+            onClick={() => setTab('Program')}
+            className={`text-left w-full rounded-2xl p-4 ${isDeload ? 'bg-dl-bg border-2 border-dl-bd' : 'bg-primary shadow-lg'}`}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <p className={`text-[11px] font-semibold uppercase tracking-wide mb-0.5 ${isDeload ? 'text-dl-tx' : 'text-white/60'}`}>
+                  {isDeload ? '⚠️ Deload Week' : `Week ${week} of ${CYCLE}`}
+                </p>
+                <p className={`text-sm font-bold mb-0.5 ${isDeload ? 'text-dl-tx' : 'text-white'}`}>
+                  {progDay?.name || 'No day set'}
+                </p>
+                <p className={`text-xs ${isDeload ? 'text-dl-tx' : 'text-white/50'}`}>
+                  {getGrouped(progDay).map(g =>
+                    g.type === 'superset' ? `[SS: ${g.exercises.join('+')}]` : g.exercises[0]
+                  ).join(' · ')}
+                </p>
+              </div>
+              <span className={`text-2xl ${isDeload ? 'text-dl-tx' : 'text-white/70'}`}>→</span>
             </div>
-          )}
-        </button>
+            {!isDeload && (
+              <div className="flex gap-1 mt-3">
+                {Array.from({ length: CYCLE }, (_, i) => (
+                  <div
+                    key={i}
+                    className={`flex-1 h-0.5 rounded-full ${i < week - 1 ? 'bg-white/90' : i === week - 1 ? 'bg-white/50' : 'bg-white/15'}`}
+                  />
+                ))}
+              </div>
+            )}
+          </button>
+        )
       ) : (
         <button
           onClick={() => setTab('Program')}
