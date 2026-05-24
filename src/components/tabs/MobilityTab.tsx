@@ -4,7 +4,7 @@ import { useAppStore } from '../../store/app'
 import { today } from '../../lib/utils'
 import { Card, SecTitle, EmptyMsg } from '../ui/Card'
 import { Inp } from '../ui/Input'
-import { Btn, DelBtn } from '../ui/Button'
+import { Btn, DelBtn, EditBtn } from '../ui/Button'
 import { SmartInput } from '../ui/SmartInput'
 import type { MobilityExercise } from '../../types'
 
@@ -17,7 +17,7 @@ export function MobilityTab() {
   const [exercises, setExercises] = useState<MobilityExercise[]>([emptyExercise()])
   const [revealedEx, setRevealedEx] = useState(1)
   const [selEx, setSelEx] = useState('')
-  const { mobility, addMobilityEntry, removeMobilityEntry, setToast } = useAppStore()
+  const { mobility, addMobilityEntry, removeMobilityEntry, openEditModal, setToast } = useAppStore()
 
   const allExNames = [...new Set(mobility.flatMap(m => m.exercises.map(e => e.name)))].sort()
 
@@ -132,6 +132,7 @@ export function MobilityTab() {
                 <span className="text-sm font-medium text-primary">{m.date}</span>
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs text-muted">{m.duration}min total</span>
+                  <EditBtn onClick={() => openEditModal({ type: 'mobility', record: m })} />
                   <DelBtn onClick={() => removeMobilityEntry(m.id)} />
                 </div>
               </div>

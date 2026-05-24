@@ -41,3 +41,18 @@ export async function deleteDonationEntry(id: string): Promise<void> {
   const { error } = await supabase.from('blood_donations').delete().eq('id', id)
   if (error) throw error
 }
+
+export async function updateDonationEntry(
+  id: string,
+  patch: Omit<DonationEntry, 'id'>
+): Promise<void> {
+  const { error } = await supabase
+    .from('blood_donations')
+    .update({
+      donation_date: patch.date,
+      donation_type: DONATION_TYPE_MAP[patch.type] ?? patch.type.toLowerCase().replace(' ', '_'),
+      notes: patch.notes ?? null,
+    })
+    .eq('id', id)
+  if (error) throw error
+}

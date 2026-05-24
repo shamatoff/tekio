@@ -85,3 +85,12 @@ export interface AppState {
   donations: DonationEntry[]
   program: Program | null
 }
+
+export type EditModalTarget =
+  | { type: 'weight'; record: WeightEntry }
+  | { type: 'weight-superset'; records: [WeightEntry, WeightEntry] }
+  | { type: 'bodyweight'; record: BodyweightEntry }
+  | { type: 'cardio'; record: CardioEntry }
+  | { type: 'mobility'; record: MobilityEntry }
+  | { type: 'skill'; record: SkillEntry }
+  | { type: 'donation'; record: DonationEntry }

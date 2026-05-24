@@ -143,12 +143,15 @@ export async function deleteWeightEntry(id: string): Promise<void> {
   }
 }
 
-export async function updateWeightEntry(id: string, sets: LiftSet[]): Promise<void> {
+export async function updateWeightEntry(
+  id: string,
+  patch: { sets: LiftSet[]; date?: string }
+): Promise<void> {
   // Replace all sets for this session_exercise
   await supabase.from('session_sets').delete().eq('session_exercise_id', id)
-  if (sets.length > 0) {
+  if (patch.sets.length > 0) {
     const { error } = await supabase.from('session_sets').insert(
-      sets.map((s, i) => ({
+      patch.sets.map((s, i) => ({
         session_exercise_id: id,
         set_number: i + 1,
         weight: s.weight,
@@ -156,5 +159,33 @@ export async function updateWeightEntry(id: string, sets: LiftSet[]): Promise<vo
       }))
     )
     if (error) throw error
+  }
+
+  // If date supplied, move session_exercise to the correct training_session
+  if (patch.date) {
+    const { data: se } = await supabase
+      .from('session_exercises')
+      .select('session_id')
+      .eq('id', id)
+      .single()
+
+    const newSessionId = await getOrCreateSession(patch.date)
+
+    const { error } = await supabase
+      .from('session_exercises')
+      .update({ session_id: newSessionId })
+      .eq('id', id)
+    if (error) throw error
+
+    // Clean up the old session if it is now empty
+    if (se?.session_id && se.session_id !== newSessionId) {
+      const { count } = await supabase
+        .from('session_exercises')
+        .select('id', { count: 'exact', head: true })
+        .eq('session_id', se.session_id)
+      if ((count ?? 0) === 0) {
+        await supabase.from('training_sessions').delete().eq('id', se.session_id)
+      }
+    }
   }
 }

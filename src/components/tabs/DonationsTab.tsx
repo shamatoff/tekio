@@ -4,14 +4,14 @@ import { today } from '../../lib/utils'
 import { DONATION_TYPES, DONATION_ICONS, DONATION_ELIGIBILITY_DAYS } from '../../constants/app'
 import { Card, SecTitle, EmptyMsg } from '../ui/Card'
 import { Inp } from '../ui/Input'
-import { Btn, DelBtn } from '../ui/Button'
+import { Btn, DelBtn, EditBtn } from '../ui/Button'
 import type { DonationType } from '../../types'
 
 export function DonationsTab() {
   const [date, setDate] = useState(today())
   const [type, setType] = useState<DonationType>('Full Blood')
   const [notes, setNotes] = useState('')
-  const { donations, addDonationEntry, removeDonationEntry, setToast } = useAppStore()
+  const { donations, addDonationEntry, removeDonationEntry, openEditModal, setToast } = useAppStore()
 
   const add = async () => {
     try {
@@ -99,6 +99,7 @@ export function DonationsTab() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted">{d.date}</span>
+                <EditBtn onClick={() => openEditModal({ type: 'donation', record: d })} />
                 <DelBtn onClick={() => removeDonationEntry(d.id)} />
               </div>
             </div>

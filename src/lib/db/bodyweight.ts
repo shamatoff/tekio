@@ -33,3 +33,14 @@ export async function deleteBodyweightEntry(id: string): Promise<void> {
   const { error } = await supabase.from('bodyweight_logs').delete().eq('id', id)
   if (error) throw error
 }
+
+export async function updateBodyweightEntry(
+  id: string,
+  patch: Omit<BodyweightEntry, 'id'>
+): Promise<void> {
+  const { error } = await supabase
+    .from('bodyweight_logs')
+    .update({ log_date: patch.date, weight: patch.weight })
+    .eq('id', id)
+  if (error) throw error
+}

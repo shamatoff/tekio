@@ -4,7 +4,7 @@ import { useAppStore } from '../../store/app'
 import { today, weekKey } from '../../lib/utils'
 import { Card, SecTitle, EmptyMsg } from '../ui/Card'
 import { Inp } from '../ui/Input'
-import { Btn, DelBtn } from '../ui/Button'
+import { Btn, DelBtn, EditBtn } from '../ui/Button'
 import { SmartInput } from '../ui/SmartInput'
 import type { QualityRating } from '../../types'
 
@@ -17,7 +17,7 @@ export function SkillsTab() {
   const [quality, setQuality] = useState(0)
   const [notes, setNotes] = useState('')
   const [selSkill, setSelSkill] = useState('')
-  const { skills, addSkillEntry, removeSkillEntry, setToast } = useAppStore()
+  const { skills, addSkillEntry, removeSkillEntry, openEditModal, setToast } = useAppStore()
 
   const allSkills = [...new Set(skills.map(d => d.skill))].sort()
 
@@ -151,6 +151,7 @@ export function SkillsTab() {
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs text-muted">{d.date}</span>
+                  <EditBtn onClick={() => openEditModal({ type: 'skill', record: d })} />
                   <DelBtn onClick={() => removeSkillEntry(d.id)} />
                 </div>
               </div>

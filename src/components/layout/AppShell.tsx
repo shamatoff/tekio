@@ -3,6 +3,7 @@ import { useAppStore } from '../../store/app'
 import { cycleInfo } from '../../lib/utils'
 import { DeloadBadge } from '../ui/Badges'
 import { Toast } from '../ui/Toast'
+import { EditModal } from '../ui/EditModal'
 import { Drawer } from './Drawer'
 import { BottomNav } from './BottomNav'
 import { ImportPane } from './ImportPane'
@@ -53,6 +54,7 @@ export function AppShell({ tab, setTab, children }: AppShellProps) {
   return (
     <div className="min-h-screen bg-bg">
       <Toast />
+      <EditModal />
 
       <Drawer
         open={drawerOpen}

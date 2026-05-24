@@ -4,12 +4,12 @@ import { useAppStore } from '../../store/app'
 import { today } from '../../lib/utils'
 import { Card, SecTitle, EmptyMsg } from '../ui/Card'
 import { Inp } from '../ui/Input'
-import { Btn, DelBtn } from '../ui/Button'
+import { Btn, DelBtn, EditBtn } from '../ui/Button'
 
 export function BodyWeightTab() {
   const [date, setDate] = useState(today())
   const [weight, setWeight] = useState('')
-  const { bodyweight, addBodyweightEntry, removeBodyweightEntry, setToast } = useAppStore()
+  const { bodyweight, addBodyweightEntry, removeBodyweightEntry, openEditModal, setToast } = useAppStore()
 
   const add = async () => {
     if (!weight) return
@@ -83,6 +83,7 @@ export function BodyWeightTab() {
               <span className="text-sm text-muted">{d.date}</span>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold text-primary">{d.weight} kg</span>
+                <EditBtn onClick={() => openEditModal({ type: 'bodyweight', record: d })} />
                 <DelBtn onClick={() => removeBodyweightEntry(d.id)} />
               </div>
             </div>
