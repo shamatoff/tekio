@@ -2,10 +2,11 @@ import { useState } from 'react'
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Line } from 'recharts'
 import { useAppStore } from '../../store/app'
 import { today } from '../../lib/utils'
-import { Card, SecTitle, EmptyMsg } from '../ui/Card'
+import { Card, SecTitle } from '../ui/Card'
 import { Inp } from '../ui/Input'
 import { Btn, DelBtn, EditBtn } from '../ui/Button'
 import { SmartInput } from '../ui/SmartInput'
+import { HistoryList } from '../ui/HistoryList'
 import type { MobilityExercise } from '../../types'
 
 function emptyExercise(): MobilityExercise {
@@ -47,7 +48,7 @@ export function MobilityTab() {
       duration: m.exercises.find(e => e.name === chartEx)?.duration ?? 0,
     }))
 
-  const recent = [...mobility].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 25)
+  const sortedMobility = [...mobility].sort((a, b) => b.date.localeCompare(a.date))
 
   return (
     <div className="flex flex-col gap-4">
@@ -123,10 +124,11 @@ export function MobilityTab() {
 
       <Card>
         <SecTitle>History</SecTitle>
-        {recent.length === 0 ? (
-          <EmptyMsg>No sessions yet</EmptyMsg>
-        ) : (
-          recent.map(m => (
+        <HistoryList
+          items={sortedMobility}
+          getDate={m => m.date}
+          emptyMessage="No sessions yet"
+          renderItem={m => (
             <div key={m.id} className="py-2 border-b border-bg last:border-0">
               <div className="flex items-center justify-between mb-1">
                 <span className="text-sm font-medium text-primary">{m.date}</span>
@@ -142,8 +144,8 @@ export function MobilityTab() {
                 </div>
               ))}
             </div>
-          ))
-        )}
+          )}
+        />
       </Card>
     </div>
   )
