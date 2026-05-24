@@ -5,7 +5,7 @@ import { today } from '../../lib/utils'
 import { CARDIO_TYPES, CARDIO_ICONS } from '../../constants/app'
 import { Card, SecTitle, EmptyMsg } from '../ui/Card'
 import { Inp } from '../ui/Input'
-import { Btn, DelBtn } from '../ui/Button'
+import { Btn, DelBtn, EditBtn } from '../ui/Button'
 import { Chip } from '../ui/Chip'
 import type { CardioType } from '../../types'
 
@@ -16,7 +16,7 @@ export function CardioTab() {
   const [distance, setDistance] = useState('')
   const [notes, setNotes] = useState('')
   const [filter, setFilter] = useState('All')
-  const { cardio, addCardioEntry, removeCardioEntry, setToast } = useAppStore()
+  const { cardio, addCardioEntry, removeCardioEntry, openEditModal, setToast } = useAppStore()
 
   const add = async () => {
     if (!duration) return
@@ -110,6 +110,7 @@ export function CardioTab() {
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="text-xs text-muted">{d.date}</span>
+                <EditBtn onClick={() => openEditModal({ type: 'cardio', record: d })} />
                 <DelBtn onClick={() => removeCardioEntry(d.id)} />
               </div>
             </div>

@@ -52,3 +52,30 @@ export async function deleteMobilityEntry(id: string): Promise<void> {
   const { error } = await supabase.from('mobility_sessions').delete().eq('id', id)
   if (error) throw error
 }
+
+export async function updateMobilityEntry(
+  id: string,
+  patch: Omit<MobilityEntry, 'id'>
+): Promise<void> {
+  const totalDuration = patch.exercises.reduce((s, e) => s + e.duration, 0)
+
+  const { error: sessionErr } = await supabase
+    .from('mobility_sessions')
+    .update({ session_date: patch.date, total_duration: totalDuration })
+    .eq('id', id)
+  if (sessionErr) throw sessionErr
+
+  // Replace exercises: delete existing, insert new
+  await supabase.from('mobility_exercises').delete().eq('session_id', id)
+  if (patch.exercises.length > 0) {
+    const { error: exErr } = await supabase.from('mobility_exercises').insert(
+      patch.exercises.map(e => ({
+        session_id: id,
+        exercise_name: e.name,
+        duration_minutes: e.duration,
+        notes: e.notes || null,
+      }))
+    )
+    if (exErr) throw exErr
+  }
+}

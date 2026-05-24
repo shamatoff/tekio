@@ -1,13 +1,28 @@
 import { create } from 'zustand'
-import type { AppState, WeightEntry, BodyweightEntry, CardioEntry, MobilityEntry, SkillEntry, DonationEntry, Program } from '../types'
+import type {
+  AppState,
+  WeightEntry,
+  BodyweightEntry,
+  CardioEntry,
+  MobilityEntry,
+  SkillEntry,
+  DonationEntry,
+  Program,
+  EditModalTarget,
+} from '../types'
 import { getOrCreateUser } from '../lib/db/user'
-import { loadWeights, saveWeightEntry, deleteWeightEntry, updateWeightEntry } from '../lib/db/weights'
+import {
+  loadWeights,
+  saveWeightEntry,
+  deleteWeightEntry,
+  updateWeightEntry,
+} from '../lib/db/weights'
 import { loadActiveProgram, saveProgram, advanceProgram, deleteProgram, restartProgram } from '../lib/db/program'
-import { loadBodyweight, saveBodyweightEntry, deleteBodyweightEntry } from '../lib/db/bodyweight'
-import { loadCardio, saveCardioEntry, deleteCardioEntry } from '../lib/db/cardio'
-import { loadMobility, saveMobilityEntry, deleteMobilityEntry } from '../lib/db/mobility'
-import { loadSkills, saveSkillEntry, deleteSkillEntry } from '../lib/db/skills'
-import { loadDonations, saveDonationEntry, deleteDonationEntry } from '../lib/db/donations'
+import { loadBodyweight, saveBodyweightEntry, deleteBodyweightEntry, updateBodyweightEntry } from '../lib/db/bodyweight'
+import { loadCardio, saveCardioEntry, deleteCardioEntry, updateCardioEntry } from '../lib/db/cardio'
+import { loadMobility, saveMobilityEntry, deleteMobilityEntry, updateMobilityEntry } from '../lib/db/mobility'
+import { loadSkills, saveSkillEntry, deleteSkillEntry, updateSkillEntry } from '../lib/db/skills'
+import { loadDonations, saveDonationEntry, deleteDonationEntry, updateDonationEntry } from '../lib/db/donations'
 import { usePrefs } from './prefs'
 import type { LiftSet } from '../types'
 
@@ -16,6 +31,11 @@ interface AppStore extends AppState {
   toast: string
   programId: string | null
   userProgramId: string | null
+
+  // Edit modal
+  editModal: EditModalTarget | null
+  openEditModal: (target: EditModalTarget) => void
+  closeEditModal: () => void
 
   setWeights: (weights: AppState['weights']) => void
   setBodyweight: (bodyweight: AppState['bodyweight']) => void
@@ -31,7 +51,7 @@ interface AppStore extends AppState {
   // Weights
   addWeightEntry: (entry: Omit<WeightEntry, 'id'>) => Promise<void>
   removeWeightEntry: (id: string) => Promise<void>
-  editWeightEntry: (id: string, sets: LiftSet[]) => Promise<void>
+  editWeightEntry: (id: string, patch: { sets: LiftSet[]; date?: string }) => Promise<void>
 
   // Program
   saveActiveProgram: (program: Program) => Promise<void>
@@ -42,22 +62,27 @@ interface AppStore extends AppState {
   // Bodyweight
   addBodyweightEntry: (entry: Omit<BodyweightEntry, 'id'>) => Promise<void>
   removeBodyweightEntry: (id: string) => Promise<void>
+  editBodyweightEntry: (id: string, patch: Omit<BodyweightEntry, 'id'>) => Promise<void>
 
   // Cardio
   addCardioEntry: (entry: Omit<CardioEntry, 'id'>) => Promise<void>
   removeCardioEntry: (id: string) => Promise<void>
+  editCardioEntry: (id: string, patch: Omit<CardioEntry, 'id'>) => Promise<void>
 
   // Mobility
   addMobilityEntry: (entry: Omit<MobilityEntry, 'id'>) => Promise<void>
   removeMobilityEntry: (id: string) => Promise<void>
+  editMobilityEntry: (id: string, patch: Omit<MobilityEntry, 'id'>) => Promise<void>
 
   // Skills
   addSkillEntry: (entry: Omit<SkillEntry, 'id'>) => Promise<void>
   removeSkillEntry: (id: string) => Promise<void>
+  editSkillEntry: (id: string, patch: Omit<SkillEntry, 'id'>) => Promise<void>
 
   // Donations
   addDonationEntry: (entry: Omit<DonationEntry, 'id'>) => Promise<void>
   removeDonationEntry: (id: string) => Promise<void>
+  editDonationEntry: (id: string, patch: Omit<DonationEntry, 'id'>) => Promise<void>
 }
 
 export const useAppStore = create<AppStore>((set, get) => ({
@@ -72,7 +97,13 @@ export const useAppStore = create<AppStore>((set, get) => ({
   toast: '',
   programId: null,
   userProgramId: null,
+  editModal: null,
 
+  // ── Edit modal ──────────────────────────────────────────────────────────────
+  openEditModal: (target) => set({ editModal: target }),
+  closeEditModal: () => set({ editModal: null }),
+
+  // ── Setters ─────────────────────────────────────────────────────────────────
   setWeights: (weights) => set({ weights }),
   setBodyweight: (bodyweight) => set({ bodyweight }),
   setCardio: (cardio) => set({ cardio }),
@@ -85,6 +116,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (toast) setTimeout(() => set({ toast: '' }), 3000)
   },
 
+  // ── Bootstrap ────────────────────────────────────────────────────────────────
   bootstrap: async () => {
     set({ loading: true })
     try {
@@ -115,7 +147,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }
   },
 
-  // Weights
+  // ── Weights ──────────────────────────────────────────────────────────────────
   addWeightEntry: async (entry) => {
     const saved = await saveWeightEntry(entry)
     set(s => ({ weights: [saved, ...s.weights] }))
@@ -124,12 +156,18 @@ export const useAppStore = create<AppStore>((set, get) => ({
     await deleteWeightEntry(id)
     set(s => ({ weights: s.weights.filter(w => w.id !== id) }))
   },
-  editWeightEntry: async (id, sets) => {
-    await updateWeightEntry(id, sets)
-    set(s => ({ weights: s.weights.map(w => w.id === id ? { ...w, sets } : w) }))
+  editWeightEntry: async (id, patch) => {
+    await updateWeightEntry(id, patch)
+    set(s => ({
+      weights: s.weights.map(w =>
+        w.id === id
+          ? { ...w, sets: patch.sets, ...(patch.date ? { date: patch.date } : {}) }
+          : w
+      ),
+    }))
   },
 
-  // Program
+  // ── Program ──────────────────────────────────────────────────────────────────
   saveActiveProgram: async (program) => {
     const { programId, userProgramId } = get()
     const result = await saveProgram(program, programId ?? undefined, userProgramId ?? undefined)
@@ -153,7 +191,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({ program: null, programId: null, userProgramId: null })
   },
 
-  // Bodyweight
+  // ── Bodyweight ───────────────────────────────────────────────────────────────
   addBodyweightEntry: async (entry) => {
     const saved = await saveBodyweightEntry(entry)
     set(s => ({
@@ -166,8 +204,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
     await deleteBodyweightEntry(id)
     set(s => ({ bodyweight: s.bodyweight.filter(b => b.id !== id) }))
   },
+  editBodyweightEntry: async (id, patch) => {
+    await updateBodyweightEntry(id, patch)
+    set(s => ({
+      bodyweight: s.bodyweight
+        .map(b => (b.id === id ? { ...b, ...patch } : b))
+        .sort((a, b) => b.date.localeCompare(a.date)),
+    }))
+  },
 
-  // Cardio
+  // ── Cardio ───────────────────────────────────────────────────────────────────
   addCardioEntry: async (entry) => {
     const saved = await saveCardioEntry(entry)
     set(s => ({ cardio: [saved, ...s.cardio] }))
@@ -176,8 +222,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
     await deleteCardioEntry(id)
     set(s => ({ cardio: s.cardio.filter(c => c.id !== id) }))
   },
+  editCardioEntry: async (id, patch) => {
+    await updateCardioEntry(id, patch)
+    set(s => ({ cardio: s.cardio.map(c => (c.id === id ? { ...c, ...patch } : c)) }))
+  },
 
-  // Mobility
+  // ── Mobility ─────────────────────────────────────────────────────────────────
   addMobilityEntry: async (entry) => {
     const saved = await saveMobilityEntry(entry)
     set(s => ({ mobility: [saved, ...s.mobility] }))
@@ -186,8 +236,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
     await deleteMobilityEntry(id)
     set(s => ({ mobility: s.mobility.filter(m => m.id !== id) }))
   },
+  editMobilityEntry: async (id, patch) => {
+    await updateMobilityEntry(id, patch)
+    set(s => ({ mobility: s.mobility.map(m => (m.id === id ? { ...m, ...patch } : m)) }))
+  },
 
-  // Skills
+  // ── Skills ───────────────────────────────────────────────────────────────────
   addSkillEntry: async (entry) => {
     const saved = await saveSkillEntry(entry)
     set(s => ({ skills: [saved, ...s.skills] }))
@@ -196,8 +250,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
     await deleteSkillEntry(id)
     set(s => ({ skills: s.skills.filter(sk => sk.id !== id) }))
   },
+  editSkillEntry: async (id, patch) => {
+    await updateSkillEntry(id, patch)
+    set(s => ({ skills: s.skills.map(sk => (sk.id === id ? { ...sk, ...patch } : sk)) }))
+  },
 
-  // Donations
+  // ── Donations ────────────────────────────────────────────────────────────────
   addDonationEntry: async (entry) => {
     const saved = await saveDonationEntry(entry)
     set(s => ({ donations: [saved, ...s.donations] }))
@@ -205,5 +263,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
   removeDonationEntry: async (id) => {
     await deleteDonationEntry(id)
     set(s => ({ donations: s.donations.filter(d => d.id !== id) }))
+  },
+  editDonationEntry: async (id, patch) => {
+    await updateDonationEntry(id, patch)
+    set(s => ({ donations: s.donations.map(d => (d.id === id ? { ...d, ...patch } : d)) }))
   },
 }))

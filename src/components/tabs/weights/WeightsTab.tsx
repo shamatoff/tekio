@@ -4,7 +4,7 @@ import { useAppStore } from '../../../store/app'
 import { today, cycleInfo, isDeloadDate, isTodayDone } from '../../../lib/utils'
 import { Card, SecTitle, EmptyMsg } from '../../ui/Card'
 import { Inp } from '../../ui/Input'
-import { Btn, DelBtn } from '../../ui/Button'
+import { Btn, DelBtn, EditBtn } from '../../ui/Button'
 import { Chip } from '../../ui/Chip'
 import { SSBadge } from '../../ui/Badges'
 import { SmartInput } from '../../ui/SmartInput'
@@ -24,7 +24,7 @@ export function WeightsTab() {
   const [ssExercises, setSsExercises] = useState<[string, string] | null>(null)
   const [ssInitialSets, setSsInitialSets] = useState<{ sets0?: LiftSet[]; sets1?: LiftSet[] } | null>(null)
 
-  const { weights, program, addWeightEntry, removeWeightEntry, advanceActiveProgram, setToast } = useAppStore()
+  const { weights, program, addWeightEntry, removeWeightEntry, openEditModal, advanceActiveProgram, setToast } = useAppStore()
 
   // Auto-advance program day when all today's exercises are logged
   useEffect(() => {
@@ -285,6 +285,7 @@ export function WeightsTab() {
                     <SSBadge />
                     <span className="text-[11px] text-ss font-semibold">Superset</span>
                     <span className="text-[11px] text-muted ml-auto">{g.entries[0].date}</span>
+                    <EditBtn onClick={() => openEditModal({ type: 'weight-superset', records: [g.entries[0], g.entries[1]] })} />
                     <DelBtn onClick={() => {
                       g.entries.forEach(e => removeWeightEntry(e.id))
                     }} />
@@ -315,6 +316,7 @@ export function WeightsTab() {
                 </div>
                 <div className="flex items-center gap-1.5 ml-2 mt-0.5">
                   <span className="text-[11px] text-muted">{entry.date}</span>
+                  <EditBtn onClick={() => openEditModal({ type: 'weight', record: entry })} />
                   <DelBtn onClick={() => removeWeightEntry(entry.id)} />
                 </div>
               </div>

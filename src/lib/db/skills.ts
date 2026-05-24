@@ -63,3 +63,21 @@ export async function deleteSkillEntry(id: string): Promise<void> {
   const { error } = await supabase.from('skill_sessions').delete().eq('id', id)
   if (error) throw error
 }
+
+export async function updateSkillEntry(
+  id: string,
+  patch: Omit<SkillEntry, 'id'>
+): Promise<void> {
+  const skillTypeId = await getOrCreateSkillType(patch.skill)
+  const { error } = await supabase
+    .from('skill_sessions')
+    .update({
+      skill_type_id: skillTypeId,
+      session_date: patch.date,
+      with_trainer: patch.withTrainer,
+      quality: patch.quality || null,
+      notes: patch.notes || null,
+    })
+    .eq('id', id)
+  if (error) throw error
+}

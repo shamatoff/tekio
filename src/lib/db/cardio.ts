@@ -47,3 +47,20 @@ export async function deleteCardioEntry(id: string): Promise<void> {
   const { error } = await supabase.from('cardio_sessions').delete().eq('id', id)
   if (error) throw error
 }
+
+export async function updateCardioEntry(
+  id: string,
+  patch: Omit<CardioEntry, 'id'>
+): Promise<void> {
+  const { error } = await supabase
+    .from('cardio_sessions')
+    .update({
+      session_date: patch.date,
+      activity_type: CARDIO_TYPE_MAP[patch.type] ?? patch.type.toLowerCase(),
+      duration_minutes: patch.duration,
+      distance_km: patch.distance ?? null,
+      notes: patch.notes ?? null,
+    })
+    .eq('id', id)
+  if (error) throw error
+}
