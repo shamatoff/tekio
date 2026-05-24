@@ -6,6 +6,8 @@ interface ModalProps {
   onClose: () => void
   title: string
   children: ReactNode
+  /** Rendered outside the scroll area — always visible at the bottom of the panel. */
+  footer?: ReactNode
 }
 
 /**
@@ -15,7 +17,7 @@ interface ModalProps {
  * - Full-screen on mobile, centred card on sm+
  * - Scrollable content area; header/footer stay fixed
  */
-export function Modal({ open, onClose, title, children }: ModalProps) {
+export function Modal({ open, onClose, title, children, footer }: ModalProps) {
   useEffect(() => {
     if (!open) return
 
@@ -66,6 +68,13 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
         <div className="overflow-y-auto overflow-x-hidden flex-1 p-4">
           {children}
         </div>
+
+        {/* Footer — outside scroll area so it's always visible on all browsers */}
+        {footer && (
+          <div className="flex-shrink-0 px-4 pb-4 pt-3 border-t border-border bg-surface">
+            {footer}
+          </div>
+        )}
       </div>
     </div>,
     document.body

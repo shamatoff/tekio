@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useAppStore } from '../../store/app'
 import { Modal } from './Modal'
 import { SetsGrid } from './SetsGrid'
@@ -58,7 +58,7 @@ function useSets(initial: LiftSet[]) {
 
 function Footer({ onCancel, onSave }: { onCancel: () => void; onSave: () => void }) {
   return (
-    <div className="sticky bottom-0 bg-surface flex gap-2 pt-3 pb-1 border-t border-border mt-2">
+    <div className="flex gap-2">
       <Btn variant="secondary" onClick={onCancel} className="flex-1">Cancel</Btn>
       <Btn onClick={onSave} className="flex-1">Save</Btn>
     </div>
@@ -67,7 +67,7 @@ function Footer({ onCancel, onSave }: { onCancel: () => void; onSave: () => void
 
 // ── WeightForm ────────────────────────────────────────────────────────────────
 
-function WeightForm({ record, onClose }: { record: WeightEntry; onClose: () => void }) {
+function WeightForm({ record, onClose, saveRef }: { record: WeightEntry; onClose: () => void; saveRef: { current: () => void } }) {
   const editWeightEntry = useAppStore(s => s.editWeightEntry)
   const setToast = useAppStore(s => s.setToast)
   const [date, setDate] = useState(record.date)
@@ -83,6 +83,7 @@ function WeightForm({ record, onClose }: { record: WeightEntry; onClose: () => v
       setToast('❌ Failed to update.')
     }
   }
+  saveRef.current = save
 
   return (
     <div className="flex flex-col gap-3">
@@ -92,14 +93,13 @@ function WeightForm({ record, onClose }: { record: WeightEntry; onClose: () => v
         sets={s.sets} revealed={s.revealed}
         onUpdate={s.update} onRemove={s.remove} onRevealNext={s.revealNext}
       />
-      <Footer onCancel={onClose} onSave={save} />
     </div>
   )
 }
 
 // ── SupersetForm ──────────────────────────────────────────────────────────────
 
-function SupersetForm({ records, onClose }: { records: [WeightEntry, WeightEntry]; onClose: () => void }) {
+function SupersetForm({ records, onClose, saveRef }: { records: [WeightEntry, WeightEntry]; onClose: () => void; saveRef: { current: () => void } }) {
   const editWeightEntry = useAppStore(s => s.editWeightEntry)
   const setToast = useAppStore(s => s.setToast)
   const [date, setDate] = useState(records[0].date)
@@ -119,6 +119,7 @@ function SupersetForm({ records, onClose }: { records: [WeightEntry, WeightEntry
       setToast('❌ Failed to update.')
     }
   }
+  saveRef.current = save
 
   return (
     <div className="flex flex-col gap-4">
@@ -139,15 +140,13 @@ function SupersetForm({ records, onClose }: { records: [WeightEntry, WeightEntry
           onUpdate={s1.update} onRemove={s1.remove} onRevealNext={s1.revealNext}
         />
       </div>
-
-      <Footer onCancel={onClose} onSave={save} />
     </div>
   )
 }
 
 // ── BodyweightForm ────────────────────────────────────────────────────────────
 
-function BodyweightForm({ record, onClose }: { record: BodyweightEntry; onClose: () => void }) {
+function BodyweightForm({ record, onClose, saveRef }: { record: BodyweightEntry; onClose: () => void; saveRef: { current: () => void } }) {
   const editBodyweightEntry = useAppStore(s => s.editBodyweightEntry)
   const setToast = useAppStore(s => s.setToast)
   const [date, setDate] = useState(record.date)
@@ -163,6 +162,7 @@ function BodyweightForm({ record, onClose }: { record: BodyweightEntry; onClose:
       setToast('❌ Failed to update.')
     }
   }
+  saveRef.current = save
 
   return (
     <div className="flex flex-col gap-3">
@@ -178,14 +178,13 @@ function BodyweightForm({ record, onClose }: { record: BodyweightEntry; onClose:
           placeholder="70.5"
         />
       </div>
-      <Footer onCancel={onClose} onSave={save} />
     </div>
   )
 }
 
 // ── CardioForm ────────────────────────────────────────────────────────────────
 
-function CardioForm({ record, onClose }: { record: CardioEntry; onClose: () => void }) {
+function CardioForm({ record, onClose, saveRef }: { record: CardioEntry; onClose: () => void; saveRef: { current: () => void } }) {
   const editCardioEntry = useAppStore(s => s.editCardioEntry)
   const setToast = useAppStore(s => s.setToast)
   const [date, setDate] = useState(record.date)
@@ -210,6 +209,7 @@ function CardioForm({ record, onClose }: { record: CardioEntry; onClose: () => v
       setToast('❌ Failed to update.')
     }
   }
+  saveRef.current = save
 
   return (
     <div className="flex flex-col gap-3">
@@ -245,7 +245,6 @@ function CardioForm({ record, onClose }: { record: CardioEntry; onClose: () => v
         onChange={e => setNotes(e.target.value)}
         placeholder="e.g. Easy zone 2"
       />
-      <Footer onCancel={onClose} onSave={save} />
     </div>
   )
 }
@@ -254,7 +253,7 @@ function CardioForm({ record, onClose }: { record: CardioEntry; onClose: () => v
 
 function emptyEx(): MobilityExercise { return { name: '', duration: 0, notes: '' } }
 
-function MobilityForm({ record, onClose }: { record: MobilityEntry; onClose: () => void }) {
+function MobilityForm({ record, onClose, saveRef }: { record: MobilityEntry; onClose: () => void; saveRef: { current: () => void } }) {
   const editMobilityEntry = useAppStore(s => s.editMobilityEntry)
   const setToast = useAppStore(s => s.setToast)
   const allExNames = useAppStore(s =>
@@ -285,6 +284,7 @@ function MobilityForm({ record, onClose }: { record: MobilityEntry; onClose: () 
       setToast('❌ Failed to update.')
     }
   }
+  saveRef.current = save
 
   return (
     <div className="flex flex-col gap-3">
@@ -322,8 +322,6 @@ function MobilityForm({ record, onClose }: { record: MobilityEntry; onClose: () 
       ))}
 
       <button onClick={addEx} className="text-xs text-accent text-left">+ Add Exercise</button>
-
-      <Footer onCancel={onClose} onSave={save} />
     </div>
   )
 }
@@ -332,7 +330,7 @@ function MobilityForm({ record, onClose }: { record: MobilityEntry; onClose: () 
 
 const STARS = [1, 2, 3, 4, 5]
 
-function SkillForm({ record, onClose }: { record: SkillEntry; onClose: () => void }) {
+function SkillForm({ record, onClose, saveRef }: { record: SkillEntry; onClose: () => void; saveRef: { current: () => void } }) {
   const editSkillEntry = useAppStore(s => s.editSkillEntry)
   const setToast = useAppStore(s => s.setToast)
   const allSkills = useAppStore(s =>
@@ -360,6 +358,7 @@ function SkillForm({ record, onClose }: { record: SkillEntry; onClose: () => voi
       setToast('❌ Failed to update.')
     }
   }
+  saveRef.current = save
 
   return (
     <div className="flex flex-col gap-3">
@@ -417,15 +416,13 @@ function SkillForm({ record, onClose }: { record: SkillEntry; onClose: () => voi
         onChange={e => setNotes(e.target.value)}
         placeholder="How did it go?"
       />
-
-      <Footer onCancel={onClose} onSave={save} />
     </div>
   )
 }
 
 // ── DonationForm ──────────────────────────────────────────────────────────────
 
-function DonationForm({ record, onClose }: { record: DonationEntry; onClose: () => void }) {
+function DonationForm({ record, onClose, saveRef }: { record: DonationEntry; onClose: () => void; saveRef: { current: () => void } }) {
   const editDonationEntry = useAppStore(s => s.editDonationEntry)
   const setToast = useAppStore(s => s.setToast)
   const [date, setDate] = useState(record.date)
@@ -441,6 +438,7 @@ function DonationForm({ record, onClose }: { record: DonationEntry; onClose: () 
       setToast('❌ Failed to update.')
     }
   }
+  saveRef.current = save
 
   return (
     <div className="flex flex-col gap-3">
@@ -459,7 +457,6 @@ function DonationForm({ record, onClose }: { record: DonationEntry; onClose: () 
         onChange={e => setNotes(e.target.value)}
         placeholder="Optional notes"
       />
-      <Footer onCancel={onClose} onSave={save} />
     </div>
   )
 }
@@ -483,33 +480,36 @@ const TITLES: Record<string, string> = {
 export function EditModal() {
   const editModal = useAppStore(s => s.editModal)
   const closeEditModal = useAppStore(s => s.closeEditModal)
+  // Each form writes its save fn here on every render; Footer calls it.
+  const saveRef = useRef<() => void>(() => {})
 
   return (
     <Modal
       open={!!editModal}
       onClose={closeEditModal}
       title={editModal ? TITLES[editModal.type] : ''}
+      footer={<Footer onCancel={closeEditModal} onSave={() => saveRef.current()} />}
     >
       {editModal?.type === 'weight' && (
-        <WeightForm record={editModal.record} onClose={closeEditModal} />
+        <WeightForm record={editModal.record} onClose={closeEditModal} saveRef={saveRef} />
       )}
       {editModal?.type === 'weight-superset' && (
-        <SupersetForm records={editModal.records} onClose={closeEditModal} />
+        <SupersetForm records={editModal.records} onClose={closeEditModal} saveRef={saveRef} />
       )}
       {editModal?.type === 'bodyweight' && (
-        <BodyweightForm record={editModal.record} onClose={closeEditModal} />
+        <BodyweightForm record={editModal.record} onClose={closeEditModal} saveRef={saveRef} />
       )}
       {editModal?.type === 'cardio' && (
-        <CardioForm record={editModal.record} onClose={closeEditModal} />
+        <CardioForm record={editModal.record} onClose={closeEditModal} saveRef={saveRef} />
       )}
       {editModal?.type === 'mobility' && (
-        <MobilityForm record={editModal.record} onClose={closeEditModal} />
+        <MobilityForm record={editModal.record} onClose={closeEditModal} saveRef={saveRef} />
       )}
       {editModal?.type === 'skill' && (
-        <SkillForm record={editModal.record} onClose={closeEditModal} />
+        <SkillForm record={editModal.record} onClose={closeEditModal} saveRef={saveRef} />
       )}
       {editModal?.type === 'donation' && (
-        <DonationForm record={editModal.record} onClose={closeEditModal} />
+        <DonationForm record={editModal.record} onClose={closeEditModal} saveRef={saveRef} />
       )}
     </Modal>
   )
