@@ -187,23 +187,23 @@ export function WeightsTab() {
 
           {/* Sets grid */}
           <div className="mb-3">
-            <div className="grid gap-1.5 mb-1.5" style={{ gridTemplateColumns: '28px 1fr 1fr 28px' }}>
+            <div className="grid gap-1.5 mb-1.5" style={{ gridTemplateColumns: '28px minmax(0,1fr) minmax(0,1fr) 28px' }}>
               {['#', 'Weight (kg)', 'Reps', ''].map((h, i) => (
                 <p key={i} className="text-[11px] text-muted font-semibold">{h}</p>
               ))}
             </div>
             {sets.slice(0, revealed).map((s, i) => (
-              <div key={i} className="grid gap-1.5 mb-1.5 items-center" style={{ gridTemplateColumns: '28px 1fr 1fr 28px' }}>
+              <div key={i} className="grid gap-1.5 mb-1.5 items-center" style={{ gridTemplateColumns: '28px minmax(0,1fr) minmax(0,1fr) 28px' }}>
                 <span className="text-xs text-muted text-center">{i + 1}</span>
                 <input
                   value={s.weight} onChange={e => updateSet(i, 'weight', e.target.value)}
                   type="number" placeholder="60" min="0" step="0.5"
-                  className="border border-border rounded-lg px-2.5 py-1.5 text-sm bg-surface text-primary focus:outline-none focus:ring-2 focus:ring-accent/40"
+                  className="w-full min-w-0 border border-border rounded-lg px-2.5 py-1.5 text-sm bg-surface text-primary focus:outline-none focus:ring-2 focus:ring-accent/40"
                 />
                 <input
                   value={s.reps} onChange={e => updateSet(i, 'reps', e.target.value)}
                   type="number" placeholder="10" min="1"
-                  className="border border-border rounded-lg px-2.5 py-1.5 text-sm bg-surface text-primary focus:outline-none focus:ring-2 focus:ring-accent/40"
+                  className="w-full min-w-0 border border-border rounded-lg px-2.5 py-1.5 text-sm bg-surface text-primary focus:outline-none focus:ring-2 focus:ring-accent/40"
                 />
                 <div>{sets.slice(0, revealed).length > 1 && <DelBtn onClick={() => removeSet(i)} />}</div>
               </div>

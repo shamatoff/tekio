@@ -18,14 +18,14 @@ export function SetsGrid({ sets, revealed, onUpdate, onRemove, onRevealNext }: S
 
   return (
     <div>
-      <div className="grid gap-1.5 mb-1.5" style={{ gridTemplateColumns: '28px 1fr 1fr 28px' }}>
+      <div className="grid gap-1.5 mb-1.5" style={{ gridTemplateColumns: '28px minmax(0,1fr) minmax(0,1fr) 28px' }}>
         {['#', 'Weight (kg)', 'Reps', ''].map((h, i) => (
           <p key={i} className="text-[11px] text-muted font-semibold">{h}</p>
         ))}
       </div>
 
       {visible.map((s, i) => (
-        <div key={i} className="grid gap-1.5 mb-1.5 items-center" style={{ gridTemplateColumns: '28px 1fr 1fr 28px' }}>
+        <div key={i} className="grid gap-1.5 mb-1.5 items-center" style={{ gridTemplateColumns: '28px minmax(0,1fr) minmax(0,1fr) 28px' }}>
           <span className="text-xs text-muted text-center">{i + 1}</span>
           <input
             value={s.weight}

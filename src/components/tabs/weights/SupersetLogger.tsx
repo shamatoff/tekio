@@ -82,7 +82,7 @@ export function SupersetLogger({ exercises, weights, date, programStartDate, isD
       </div>
 
       {/* Header row */}
-      <div className="grid gap-2 mb-1.5" style={{ gridTemplateColumns: '28px 1fr 1fr' }}>
+      <div className="grid gap-2 mb-1.5" style={{ gridTemplateColumns: '28px minmax(0,1fr) minmax(0,1fr)' }}>
         <div />
         {exercises.map((ex, i) => (
           <div key={i} className="text-center text-xs font-bold text-ss bg-surface rounded-lg py-1.5">{ex}</div>
@@ -93,7 +93,7 @@ export function SupersetLogger({ exercises, weights, date, programStartDate, isD
       {lp1 && <p className="text-[10px] text-muted mb-2 pl-9">Last: {lp1.sets.map(s => `${s.weight}×${s.reps}`).join(' · ')}</p>}
 
       {Array.from({ length: Math.min(revealed, Math.max(sets0.length, sets1.length)) }, (_, i) => (
-        <div key={i} className="grid gap-2 mb-2 items-start" style={{ gridTemplateColumns: '28px 1fr 1fr' }}>
+        <div key={i} className="grid gap-2 mb-2 items-start" style={{ gridTemplateColumns: '28px minmax(0,1fr) minmax(0,1fr)' }}>
           <span className="text-[11px] text-muted text-center pt-2.5">S{i + 1}</span>
           {([
             [sets0, setSets0] as const,
@@ -104,13 +104,13 @@ export function SupersetLogger({ exercises, weights, date, programStartDate, isD
                 value={sets[i]?.weight || ''}
                 onChange={e => updateSet(setter, i, 'weight', e.target.value)}
                 type="number" placeholder="kg" min="0" step="0.5"
-                className="border border-border rounded-lg px-2 py-1.5 text-sm bg-surface text-primary focus:outline-none focus:ring-1 focus:ring-ss/50"
+                className="w-full min-w-0 border border-border rounded-lg px-2 py-1.5 text-sm bg-surface text-primary focus:outline-none focus:ring-1 focus:ring-ss/50"
               />
               <input
                 value={sets[i]?.reps || ''}
                 onChange={e => updateSet(setter, i, 'reps', e.target.value)}
                 type="number" placeholder="reps" min="1"
-                className="border border-border rounded-lg px-2 py-1.5 text-sm bg-surface text-primary focus:outline-none focus:ring-1 focus:ring-ss/50"
+                className="w-full min-w-0 border border-border rounded-lg px-2 py-1.5 text-sm bg-surface text-primary focus:outline-none focus:ring-1 focus:ring-ss/50"
               />
             </div>
           ))}
