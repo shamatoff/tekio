@@ -47,7 +47,7 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
 
       {/* Panel */}
-      <div className="relative w-full sm:max-w-md max-h-[92vh] bg-surface rounded-t-2xl sm:rounded-2xl border border-border shadow-xl flex flex-col overflow-hidden">
+      <div className="relative w-full min-w-0 sm:max-w-md max-h-[92vh] bg-surface rounded-t-2xl sm:rounded-2xl border border-border shadow-xl flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
           <h2 className="text-sm font-semibold text-primary">{title}</h2>
