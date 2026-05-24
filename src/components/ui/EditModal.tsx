@@ -291,26 +291,33 @@ function MobilityForm({ record, onClose }: { record: MobilityEntry; onClose: () 
       <Inp label="Date" type="date" value={date} onChange={e => setDate(e.target.value)} />
 
       {exercises.map((ex, i) => (
-        <div key={i} className="grid items-end gap-2" style={{ gridTemplateColumns: '1fr 70px 1fr 28px' }}>
-          <SmartInput
-            value={ex.name}
-            onChange={v => updateEx(i, 'name', v)}
-            suggestions={allExNames}
-            placeholder={`Exercise ${i + 1}`}
-          />
-          <Inp
-            type="number"
-            value={ex.duration || ''}
-            onChange={e => updateEx(i, 'duration', +e.target.value)}
-            placeholder="min"
-            min="1"
-          />
-          <Inp
-            value={ex.notes}
-            onChange={e => updateEx(i, 'notes', e.target.value)}
-            placeholder="Notes"
-          />
-          <DelBtn onClick={() => removeEx(i)} />
+        <div key={i} className="flex flex-col gap-1.5 pb-3 border-b border-bg last:border-0 last:pb-0">
+          {/* Row 1: name + delete */}
+          <div className="flex items-center gap-2">
+            <SmartInput
+              value={ex.name}
+              onChange={v => updateEx(i, 'name', v)}
+              suggestions={allExNames}
+              placeholder={`Exercise ${i + 1}`}
+              className="flex-1 min-w-0"
+            />
+            <DelBtn onClick={() => removeEx(i)} />
+          </div>
+          {/* Row 2: duration + notes */}
+          <div className="grid grid-cols-2 gap-2">
+            <Inp
+              type="number"
+              value={ex.duration || ''}
+              onChange={e => updateEx(i, 'duration', +e.target.value)}
+              placeholder="Duration (min)"
+              min="1"
+            />
+            <Inp
+              value={ex.notes}
+              onChange={e => updateEx(i, 'notes', e.target.value)}
+              placeholder="Notes (opt.)"
+            />
+          </div>
         </div>
       ))}
 
