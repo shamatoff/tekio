@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import { useAppStore } from '../../store/app'
 import { Modal } from './Modal'
 import { SetsGrid } from './SetsGrid'
@@ -256,8 +256,10 @@ function emptyEx(): MobilityExercise { return { name: '', duration: 0, notes: ''
 function MobilityForm({ record, onClose, saveRef }: { record: MobilityEntry; onClose: () => void; saveRef: { current: () => void } }) {
   const editMobilityEntry = useAppStore(s => s.editMobilityEntry)
   const setToast = useAppStore(s => s.setToast)
-  const allExNames = useAppStore(s =>
-    [...new Set(s.mobility.flatMap(m => m.exercises.map(e => e.name)))].sort()
+  const mobility = useAppStore(s => s.mobility)
+  const allExNames = useMemo(
+    () => [...new Set(mobility.flatMap(m => m.exercises.map(e => e.name)))].sort(),
+    [mobility]
   )
   const [date, setDate] = useState(record.date)
   const [exercises, setExercises] = useState<MobilityExercise[]>(
@@ -333,9 +335,8 @@ const STARS = [1, 2, 3, 4, 5]
 function SkillForm({ record, onClose, saveRef }: { record: SkillEntry; onClose: () => void; saveRef: { current: () => void } }) {
   const editSkillEntry = useAppStore(s => s.editSkillEntry)
   const setToast = useAppStore(s => s.setToast)
-  const allSkills = useAppStore(s =>
-    [...new Set(s.skills.map(d => d.skill))].sort()
-  )
+  const skills = useAppStore(s => s.skills)
+  const allSkills = useMemo(() => [...new Set(skills.map(d => d.skill))].sort(), [skills])
   const [date, setDate] = useState(record.date)
   const [skill, setSkill] = useState<string>(record.skill)
   const [withTrainer, setWithTrainer] = useState(record.withTrainer)
