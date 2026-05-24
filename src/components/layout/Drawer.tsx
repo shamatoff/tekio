@@ -1,11 +1,13 @@
-const NAV = [
-  { key: 'Weights', icon: '🏋️', label: 'Weights' },
-  { key: 'Body Weight', icon: '⚖️', label: 'Body Weight' },
-  { key: 'Cardio', icon: '❤️', label: 'Cardio' },
-  { key: 'Mobility', icon: '🧘', label: 'Mobility' },
-  { key: 'Skills', icon: '🎯', label: 'Skills' },
-  { key: 'Donations', icon: '🩸', label: 'Donations' },
-]
+import { usePrefs } from '../../store/prefs'
+
+const NAV_META: Record<string, { icon: string; label: string }> = {
+  Weights:      { icon: '🏋️', label: 'Weights' },
+  'Body Weight': { icon: '⚖️', label: 'Body Weight' },
+  Cardio:       { icon: '❤️', label: 'Cardio' },
+  Mobility:     { icon: '🧘', label: 'Mobility' },
+  Skills:       { icon: '🎯', label: 'Skills' },
+  Donations:    { icon: '🩸', label: 'Donations' },
+}
 
 interface DrawerProps {
   open: boolean
@@ -30,6 +32,15 @@ function NavItem({ icon, label, active, onClick }: { icon: string; label: string
 }
 
 export function Drawer({ open, onClose, tab, setTab, onExport, onImport }: DrawerProps) {
+  const { sections } = usePrefs()
+
+  // Build ordered nav from prefs; fall back to default order if prefs not loaded yet
+  const visibleNav = sections.length > 0
+    ? sections
+        .filter(s => s.showInMenu)
+        .map(s => ({ key: s.sectionKey, ...NAV_META[s.sectionKey] ?? { icon: '📌', label: s.sectionKey } }))
+    : Object.entries(NAV_META).map(([key, meta]) => ({ key, ...meta }))
+
   return (
     <>
       {open && (
@@ -59,10 +70,16 @@ export function Drawer({ open, onClose, tab, setTab, onExport, onImport }: Drawe
           <div className="px-4 pt-3 pb-1">
             <p className="text-[10px] font-bold text-muted uppercase tracking-widest">Log</p>
           </div>
-          {NAV.map(n => (
+          {visibleNav.map(n => (
             <NavItem key={n.key} icon={n.icon} label={n.label} active={tab === n.key} onClick={() => { setTab(n.key); onClose() }} />
           ))}
         </div>
+
+        {/* Profile & Settings */}
+        <div className="px-4 pt-3 pb-1">
+          <p className="text-[10px] font-bold text-muted uppercase tracking-widest">Account</p>
+        </div>
+        <NavItem icon="👤" label="Profile & Settings" active={tab === 'Profile'} onClick={() => { setTab('Profile'); onClose() }} />
 
         {/* Data section */}
         <div className="p-4 border-t border-border flex flex-col gap-2">

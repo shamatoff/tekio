@@ -10,10 +10,11 @@ import { MobilityTab } from './components/tabs/MobilityTab'
 import { SkillsTab } from './components/tabs/SkillsTab'
 import { DonationsTab } from './components/tabs/DonationsTab'
 import { ProgramTab } from './components/tabs/ProgramTab'
+import { ProfileTab } from './components/tabs/ProfileTab'
 
 const DRAWER_TABS = ['Weights', 'Body Weight', 'Cardio', 'Mobility', 'Skills', 'Donations'] as const
 type DrawerTab = typeof DRAWER_TABS[number]
-type Tab = 'Home' | 'Program' | DrawerTab
+type Tab = 'Home' | 'Program' | 'Profile' | DrawerTab
 
 function TabContent({ tab, setTab }: { tab: Tab; setTab: (t: string) => void }) {
   switch (tab) {
@@ -25,6 +26,7 @@ function TabContent({ tab, setTab }: { tab: Tab; setTab: (t: string) => void }) 
     case 'Mobility': return <MobilityTab />
     case 'Skills': return <SkillsTab />
     case 'Donations': return <DonationsTab />
+    case 'Profile': return <ProfileTab />
   }
 }
 
