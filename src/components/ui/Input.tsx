@@ -6,10 +6,10 @@ interface InpProps extends InputHTMLAttributes<HTMLInputElement> {
 
 export function Inp({ label, className = '', ...props }: InpProps) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1 min-w-0">
       {label && <label className="text-xs text-muted font-medium">{label}</label>}
       <input
-        className={`border border-border rounded-lg px-3 py-2 text-sm bg-surface text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/40 ${className}`}
+        className={`w-full min-w-0 border border-border rounded-lg px-3 py-2 text-sm bg-surface text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/40 ${className}`}
         {...props}
       />
     </div>
@@ -24,10 +24,10 @@ interface SelElProps extends SelectHTMLAttributes<HTMLSelectElement> {
 
 export function SelEl({ label, options, className = '', children, ...props }: SelElProps) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1 min-w-0">
       {label && <label className="text-xs text-muted font-medium">{label}</label>}
       <select
-        className={`border border-border rounded-lg px-3 py-2 text-sm bg-surface text-primary focus:outline-none focus:ring-2 focus:ring-accent/40 ${className}`}
+        className={`w-full min-w-0 border border-border rounded-lg px-3 py-2 text-sm bg-surface text-primary focus:outline-none focus:ring-2 focus:ring-accent/40 ${className}`}
         {...props}
       >
         {children ?? options.map(o => (

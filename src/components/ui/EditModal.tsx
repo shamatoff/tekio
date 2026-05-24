@@ -58,7 +58,7 @@ function useSets(initial: LiftSet[]) {
 
 function Footer({ onCancel, onSave }: { onCancel: () => void; onSave: () => void }) {
   return (
-    <div className="flex gap-2 pt-2">
+    <div className="sticky bottom-0 bg-surface flex gap-2 pt-3 pb-1 border-t border-border mt-2">
       <Btn variant="secondary" onClick={onCancel} className="flex-1">Cancel</Btn>
       <Btn onClick={onSave} className="flex-1">Save</Btn>
     </div>
