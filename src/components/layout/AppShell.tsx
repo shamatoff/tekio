@@ -17,6 +17,7 @@ const TAB_TITLES: Record<string, string> = {
   Mobility: 'Mobility',
   Skills: 'Skills',
   Donations: 'Blood Donations',
+  Profile: 'Profile & Settings',
 }
 
 interface AppShellProps {
@@ -79,8 +80,17 @@ export function AppShell({ tab, setTab, children }: AppShellProps) {
           <h1 className={`text-base font-bold ${isDeload ? 'text-dl-tx' : 'text-primary'}`}>
             {TAB_TITLES[tab] ?? tab}
           </h1>
-          <div className="w-8 flex justify-end">
+          <div className="flex items-center gap-2 justify-end">
             {isDeload && <DeloadBadge week={week} />}
+            {tab !== 'Profile' && (
+              <button
+                onClick={() => setTab('Profile')}
+                className="w-8 h-8 flex items-center justify-center text-muted hover:text-primary rounded-lg hover:bg-bg transition-colors"
+                aria-label="Profile & Settings"
+              >
+                👤
+              </button>
+            )}
           </div>
         </div>
       </header>

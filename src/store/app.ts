@@ -8,6 +8,7 @@ import { loadCardio, saveCardioEntry, deleteCardioEntry } from '../lib/db/cardio
 import { loadMobility, saveMobilityEntry, deleteMobilityEntry } from '../lib/db/mobility'
 import { loadSkills, saveSkillEntry, deleteSkillEntry } from '../lib/db/skills'
 import { loadDonations, saveDonationEntry, deleteDonationEntry } from '../lib/db/donations'
+import { usePrefs } from './prefs'
 import type { LiftSet } from '../types'
 
 interface AppStore extends AppState {
@@ -96,6 +97,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         loadMobility(),
         loadSkills(),
         loadDonations(),
+        usePrefs.getState().loadPrefs(),
       ])
       set({
         weights,

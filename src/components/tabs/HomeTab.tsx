@@ -1,4 +1,5 @@
 import { useAppStore } from '../../store/app'
+import { usePrefs } from '../../store/prefs'
 import { cycleInfo, getGrouped, weekKey, today } from '../../lib/utils'
 import { CYCLE } from '../../constants/app'
 import { Card, SecTitle } from '../ui/Card'
@@ -10,6 +11,18 @@ interface HomeTabProps {
 
 export function HomeTab({ setTab }: HomeTabProps) {
   const { weights, bodyweight, cardio, mobility, skills, donations, program } = useAppStore()
+  const { sections } = usePrefs()
+
+  // Helper: is a given section enabled for home?
+  const homeOn = (key: string) => {
+    if (sections.length === 0) return true // not loaded yet — show everything
+    return sections.find(s => s.sectionKey === key)?.showInHome ?? true
+  }
+
+  // Sort order for the optional home cards (mirrors prefs order)
+  const sectionOrder = sections.length > 0
+    ? Object.fromEntries(sections.map(s => [s.sectionKey, s.sortOrder]))
+    : {} as Record<string, number>
 
   const { week, isDeload } = cycleInfo(program)
   const progDay = program ? program.days[program.currentDayIndex % program.days.length] : null
@@ -55,12 +68,13 @@ export function HomeTab({ setTab }: HomeTabProps) {
     ? Math.ceil((new Date(nextDonDate).getTime() - new Date(today()).getTime()) / 86400000)
     : null
 
-  const statsGrid = [
-    { label: 'Lifts', value: liftWeek, emoji: '🏋️', tab: 'Weights' },
-    { label: 'Cardio', value: cardioWeek, emoji: '❤️', tab: 'Cardio' },
-    { label: 'Mobility', value: mobWeek, emoji: '🧘', tab: 'Mobility' },
-    { label: 'Weight', value: latestBw ? `${latestBw.weight}` : '–', emoji: '⚖️', tab: 'Body Weight' },
+  const statsGridAll = [
+    { label: 'Lifts',    value: liftWeek,                            emoji: '🏋️', tab: 'Weights',     sectionKey: 'Weights' },
+    { label: 'Cardio',   value: cardioWeek,                          emoji: '❤️', tab: 'Cardio',      sectionKey: 'Cardio' },
+    { label: 'Mobility', value: mobWeek,                             emoji: '🧘', tab: 'Mobility',    sectionKey: 'Mobility' },
+    { label: 'Weight',   value: latestBw ? `${latestBw.weight}` : '–', emoji: '⚖️', tab: 'Body Weight', sectionKey: 'Body Weight' },
   ]
+  const statsGrid = statsGridAll.filter(s => homeOn(s.sectionKey))
 
   return (
     <div className="flex flex-col gap-4">
@@ -127,66 +141,92 @@ export function HomeTab({ setTab }: HomeTabProps) {
         ))}
       </div>
 
-      {/* Skills this week */}
-      {Object.entries(skillWeekMap).length > 0 && (
-        <Card>
-          <SecTitle>Skills This Week</SecTitle>
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(skillWeekMap).map(([sk, count]) => (
-              <button
-                key={sk}
-                onClick={() => setTab('Skills')}
-                className="px-3 py-1.5 rounded-full bg-accent-l text-accent text-sm font-semibold"
-              >
-                {sk} <span className="opacity-70">{count}×</span>
-              </button>
-            ))}
-          </div>
-        </Card>
-      )}
-
-      {/* Donation eligibility */}
-      {donDaysLeft !== null && (
-        <Card className={donDaysLeft <= 0 ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}>
-          <p className="text-xs text-muted mb-0.5">🩸 Next Full Blood Donation</p>
-          <p className={`text-base font-bold ${donDaysLeft <= 0 ? 'text-success' : 'text-warning'}`}>
-            {donDaysLeft <= 0 ? '✅ Eligible now' : `In ${donDaysLeft} days (${nextDonDate})`}
-          </p>
-        </Card>
-      )}
-
-      {/* Body weight mini card */}
-      <Card>
-        <SecTitle>Body Weight</SecTitle>
-        {latestBw && (
-          <p className="text-xl font-bold text-primary mb-2">
-            {latestBw.weight} <span className="text-sm text-muted font-normal">kg</span>
-          </p>
-        )}
-        {bwChart.length >= 2 ? (
-          <MiniChart data={bwChart} color="#6366f1" />
-        ) : (
-          <button onClick={() => setTab('Body Weight')} className="text-sm text-accent">+ Log first weigh-in</button>
-        )}
-      </Card>
-
-      {/* Top lift mini card */}
-      <Card>
-        <SecTitle>{topEx ? `Lifting — ${topEx}` : 'Lifting'}</SecTitle>
-        {liftChart.length >= 2 ? (
-          <MiniChart data={liftChart} color="#1e293b" />
-        ) : (
-          <button onClick={() => setTab('Weights')} className="text-sm text-accent">+ Log first session</button>
-        )}
-      </Card>
-
-      {/* Cardio mini card */}
-      {cardioChart.length >= 2 && (
-        <Card>
-          <SecTitle>Cardio</SecTitle>
-          <MiniChart data={cardioChart} color="#10b981" />
-        </Card>
-      )}
+      {/* Optional home cards — sorted & gated by prefs */}
+      {[
+        {
+          key: 'Skills',
+          order: sectionOrder['Skills'] ?? 4,
+          show: homeOn('Skills') && Object.entries(skillWeekMap).length > 0,
+          node: (
+            <Card key="Skills">
+              <SecTitle>Skills This Week</SecTitle>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(skillWeekMap).map(([sk, count]) => (
+                  <button
+                    key={sk}
+                    onClick={() => setTab('Skills')}
+                    className="px-3 py-1.5 rounded-full bg-accent-l text-accent text-sm font-semibold"
+                  >
+                    {sk} <span className="opacity-70">{count}×</span>
+                  </button>
+                ))}
+              </div>
+            </Card>
+          ),
+        },
+        {
+          key: 'Donations',
+          order: sectionOrder['Donations'] ?? 5,
+          show: homeOn('Donations') && donDaysLeft !== null,
+          node: (
+            <Card key="Donations" className={donDaysLeft !== null && donDaysLeft <= 0 ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}>
+              <p className="text-xs text-muted mb-0.5">🩸 Next Full Blood Donation</p>
+              <p className={`text-base font-bold ${donDaysLeft !== null && donDaysLeft <= 0 ? 'text-success' : 'text-warning'}`}>
+                {donDaysLeft !== null && donDaysLeft <= 0 ? '✅ Eligible now' : `In ${donDaysLeft} days (${nextDonDate})`}
+              </p>
+            </Card>
+          ),
+        },
+        {
+          key: 'Body Weight',
+          order: sectionOrder['Body Weight'] ?? 1,
+          show: homeOn('Body Weight'),
+          node: (
+            <Card key="Body Weight">
+              <SecTitle>Body Weight</SecTitle>
+              {latestBw && (
+                <p className="text-xl font-bold text-primary mb-2">
+                  {latestBw.weight} <span className="text-sm text-muted font-normal">kg</span>
+                </p>
+              )}
+              {bwChart.length >= 2 ? (
+                <MiniChart data={bwChart} color="#6366f1" />
+              ) : (
+                <button onClick={() => setTab('Body Weight')} className="text-sm text-accent">+ Log first weigh-in</button>
+              )}
+            </Card>
+          ),
+        },
+        {
+          key: 'Weights',
+          order: sectionOrder['Weights'] ?? 0,
+          show: homeOn('Weights'),
+          node: (
+            <Card key="Weights">
+              <SecTitle>{topEx ? `Lifting — ${topEx}` : 'Lifting'}</SecTitle>
+              {liftChart.length >= 2 ? (
+                <MiniChart data={liftChart} color="#1e293b" />
+              ) : (
+                <button onClick={() => setTab('Weights')} className="text-sm text-accent">+ Log first session</button>
+              )}
+            </Card>
+          ),
+        },
+        {
+          key: 'Cardio',
+          order: sectionOrder['Cardio'] ?? 2,
+          show: homeOn('Cardio') && cardioChart.length >= 2,
+          node: (
+            <Card key="Cardio">
+              <SecTitle>Cardio</SecTitle>
+              <MiniChart data={cardioChart} color="#10b981" />
+            </Card>
+          ),
+        },
+      ]
+        .filter(item => item.show)
+        .sort((a, b) => a.order - b.order)
+        .map(item => item.node)}
     </div>
   )
 }
