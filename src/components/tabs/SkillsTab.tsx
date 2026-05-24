@@ -2,10 +2,11 @@ import { useState } from 'react'
 import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar } from 'recharts'
 import { useAppStore } from '../../store/app'
 import { today, weekKey } from '../../lib/utils'
-import { Card, SecTitle, EmptyMsg } from '../ui/Card'
+import { Card, SecTitle } from '../ui/Card'
 import { Inp } from '../ui/Input'
 import { Btn, DelBtn, EditBtn } from '../ui/Button'
 import { SmartInput } from '../ui/SmartInput'
+import { HistoryList } from '../ui/HistoryList'
 import type { QualityRating } from '../../types'
 
 const STARS = [1, 2, 3, 4, 5]
@@ -51,7 +52,7 @@ export function SkillsTab() {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([week, sessions]) => ({ week, sessions }))
 
-  const recent = [...skills].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30)
+  const sortedSkills = [...skills].sort((a, b) => b.date.localeCompare(a.date))
 
   return (
     <div className="flex flex-col gap-4">
@@ -132,10 +133,14 @@ export function SkillsTab() {
 
       <Card>
         <SecTitle>Recent Sessions</SecTitle>
-        {recent.length === 0 ? (
-          <EmptyMsg>No sessions yet</EmptyMsg>
-        ) : (
-          recent.map(d => (
+        <HistoryList
+          items={sortedSkills}
+          getDate={d => d.date}
+          categories={allSkills}
+          categoryLabel="Skill"
+          matchesCategory={(d, cat) => d.skill === cat}
+          emptyMessage="No sessions yet"
+          renderItem={d => (
             <div key={d.id} className="pb-2 mb-2 border-b border-bg last:border-0 last:mb-0">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
@@ -157,8 +162,8 @@ export function SkillsTab() {
               </div>
               {d.notes && <p className="text-xs text-muted italic mt-1">{d.notes}</p>}
             </div>
-          ))
-        )}
+          )}
+        />
       </Card>
     </div>
   )

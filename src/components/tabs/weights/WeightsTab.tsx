@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react'
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Line } from 'recharts'
 import { useAppStore } from '../../../store/app'
 import { today, cycleInfo, isDeloadDate, isTodayDone } from '../../../lib/utils'
-import { Card, SecTitle, EmptyMsg } from '../../ui/Card'
+import { Card, SecTitle } from '../../ui/Card'
 import { Inp } from '../../ui/Input'
 import { Btn, DelBtn, EditBtn } from '../../ui/Button'
 import { Chip } from '../../ui/Chip'
 import { SSBadge } from '../../ui/Badges'
 import { SmartInput } from '../../ui/SmartInput'
+import { HistoryList } from '../../ui/HistoryList'
 import { TodaysPlan } from './TodaysPlan'
 import { SupersetLogger } from './SupersetLogger'
 import type { WeightEntry, LiftSet } from '../../../types'
@@ -113,15 +114,15 @@ export function WeightsTab() {
       deload: isDeloadDate(program?.startDate, d.date),
     }))
 
-  const recent = [...weights].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 30)
+  const allWeightsSorted = [...weights].sort((a, b) => b.date.localeCompare(a.date))
 
-  // Group recent by superset
+  // Group all entries by superset
   const recentGrouped: Array<{ type: 'single' | 'superset'; entries: WeightEntry[] }> = []
   const usedIds = new Set<string>()
-  for (const entry of recent) {
+  for (const entry of allWeightsSorted) {
     if (usedIds.has(entry.id)) continue
     if (entry.supersetId) {
-      const partner = recent.find(e => e.supersetId === entry.supersetId && e.id !== entry.id)
+      const partner = allWeightsSorted.find(e => e.supersetId === entry.supersetId && e.id !== entry.id)
       if (partner && !usedIds.has(partner.id)) {
         recentGrouped.push({ type: 'superset', entries: [entry, partner] })
         usedIds.add(entry.id); usedIds.add(partner.id); continue
@@ -275,10 +276,14 @@ export function WeightsTab() {
       {/* Recent entries */}
       <Card>
         <SecTitle>Recent</SecTitle>
-        {recentGrouped.length === 0 ? (
-          <EmptyMsg>No entries yet</EmptyMsg>
-        ) : (
-          recentGrouped.map((g, gi) => {
+        <HistoryList
+          items={recentGrouped}
+          getDate={g => g.entries[0].date}
+          categories={exercises}
+          categoryLabel="Exercise"
+          matchesCategory={(g, cat) => g.entries.some(e => e.exercise === cat)}
+          emptyMessage="No entries yet"
+          renderItem={(g, gi) => {
             if (g.type === 'superset') {
               return (
                 <div key={gi} className="mb-3 border border-ss-b rounded-xl p-2.5 bg-ss-l">
@@ -322,8 +327,8 @@ export function WeightsTab() {
                 </div>
               </div>
             )
-          })
-        )}
+          }}
+        />
       </Card>
     </div>
   )

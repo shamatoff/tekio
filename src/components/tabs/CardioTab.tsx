@@ -3,10 +3,11 @@ import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, L
 import { useAppStore } from '../../store/app'
 import { today } from '../../lib/utils'
 import { CARDIO_TYPES, CARDIO_ICONS } from '../../constants/app'
-import { Card, SecTitle, EmptyMsg } from '../ui/Card'
+import { Card, SecTitle } from '../ui/Card'
 import { Inp } from '../ui/Input'
 import { Btn, DelBtn, EditBtn } from '../ui/Button'
 import { Chip } from '../ui/Chip'
+import { HistoryList } from '../ui/HistoryList'
 import type { CardioType } from '../../types'
 
 export function CardioTab() {
@@ -39,9 +40,7 @@ export function CardioTab() {
     .sort((a, b) => a.date.localeCompare(b.date))
     .map(d => ({ date: d.date.slice(5), duration: d.duration, ...(d.distance ? { distance: d.distance } : {}) }))
 
-  const shown = (filter === 'All' ? cardio : cardio.filter(d => d.type === filter))
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .slice(0, 25)
+  const allSorted = [...cardio].sort((a, b) => b.date.localeCompare(a.date))
 
   return (
     <div className="flex flex-col gap-4">
@@ -97,10 +96,14 @@ export function CardioTab() {
 
       <Card>
         <SecTitle>Sessions</SecTitle>
-        {shown.length === 0 ? (
-          <EmptyMsg>No sessions yet</EmptyMsg>
-        ) : (
-          shown.map(d => (
+        <HistoryList
+          items={allSorted}
+          getDate={d => d.date}
+          categories={[...CARDIO_TYPES]}
+          categoryLabel="Type"
+          matchesCategory={(d, cat) => d.type === cat}
+          emptyMessage="No sessions yet"
+          renderItem={d => (
             <div key={d.id} className="flex items-center justify-between py-2 border-b border-bg last:border-0">
               <div>
                 <span className="text-base mr-1.5">{CARDIO_ICONS[d.type]}</span>
@@ -114,8 +117,8 @@ export function CardioTab() {
                 <DelBtn onClick={() => removeCardioEntry(d.id)} />
               </div>
             </div>
-          ))
-        )}
+          )}
+        />
       </Card>
     </div>
   )

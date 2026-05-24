@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Line } from 'recharts'
 import { useAppStore } from '../../store/app'
 import { today } from '../../lib/utils'
-import { Card, SecTitle, EmptyMsg } from '../ui/Card'
+import { Card, SecTitle } from '../ui/Card'
 import { Inp } from '../ui/Input'
 import { Btn, DelBtn, EditBtn } from '../ui/Button'
+import { HistoryList } from '../ui/HistoryList'
 
 export function BodyWeightTab() {
   const [date, setDate] = useState(today())
@@ -22,9 +23,9 @@ export function BodyWeightTab() {
     }
   }
 
-  const recent = [...bodyweight].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20)
-  const latest = recent[0]
-  const prev = recent[1]
+  const sorted = [...bodyweight].sort((a, b) => b.date.localeCompare(a.date))
+  const latest = sorted[0]
+  const prev = sorted[1]
   const diff = latest && prev ? (latest.weight - prev.weight).toFixed(1) : null
   const diffColor = !diff ? '#94a3b8' : +diff > 0 ? 'text-danger' : 'text-success'
   const chartData = [...bodyweight]
@@ -75,10 +76,11 @@ export function BodyWeightTab() {
 
       <Card>
         <SecTitle>History</SecTitle>
-        {recent.length === 0 ? (
-          <EmptyMsg>No entries yet</EmptyMsg>
-        ) : (
-          recent.map(d => (
+        <HistoryList
+          items={sorted}
+          getDate={d => d.date}
+          emptyMessage="No entries yet"
+          renderItem={d => (
             <div key={d.id} className="flex items-center justify-between py-2 border-b border-bg last:border-0">
               <span className="text-sm text-muted">{d.date}</span>
               <div className="flex items-center gap-2">
@@ -87,8 +89,8 @@ export function BodyWeightTab() {
                 <DelBtn onClick={() => removeBodyweightEntry(d.id)} />
               </div>
             </div>
-          ))
-        )}
+          )}
+        />
       </Card>
     </div>
   )
