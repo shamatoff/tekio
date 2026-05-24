@@ -29,6 +29,7 @@ export function WeightsTab() {
   // Auto-advance program day when all today's exercises are logged
   useEffect(() => {
     if (!program) return
+    if (cycleInfo(program).isComplete) return
     const day = program.days[program.currentDayIndex % program.days.length]
     if (!day) return
     if (isTodayDone(weights, day) && program.lastAdvancedDate !== today()) {
@@ -100,7 +101,7 @@ export function WeightsTab() {
     }
   }
 
-  const { isDeload } = cycleInfo(program)
+  const { isDeload, isComplete } = cycleInfo(program)
   const chartEx = selEx || exercises[0] || ''
   const chartData = weights
     .filter(d => d.exercise === chartEx)
@@ -132,7 +133,7 @@ export function WeightsTab() {
 
   return (
     <div className="flex flex-col gap-4">
-      {program && (
+      {program && !isComplete && (
         <TodaysPlan
           program={program}
           weights={weights}
