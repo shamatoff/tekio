@@ -42,7 +42,7 @@ export function TodaysPlan({ program, weights, onPickSingle, onPickSingleWithSet
       </button>
 
       {open && (
-        <div className="bg-surface px-3.5 pb-3.5">
+        <div className="bg-surface px-3.5 pt-3.5 pb-3.5">
           {groups.map((g, gi) => {
             if (g.type === 'superset') {
               return (
