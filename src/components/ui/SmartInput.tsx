@@ -29,7 +29,7 @@ export function SmartInput({ value, onChange, suggestions, placeholder, classNam
   }, [])
 
   return (
-    <div ref={ref} className={`relative ${className}`}>
+    <div ref={ref} className={`relative min-w-0 ${className}`}>
       <input
         value={value}
         onChange={e => { onChange(e.target.value); setOpen(true) }}
