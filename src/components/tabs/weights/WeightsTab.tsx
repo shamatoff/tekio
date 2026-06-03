@@ -25,26 +25,32 @@ export function WeightsTab() {
   const [ssExercises, setSsExercises] = useState<[string, string] | null>(null)
   const [ssInitialSets, setSsInitialSets] = useState<{ sets0?: LiftSet[]; sets1?: LiftSet[] } | null>(null)
 
-  const { weights, program, addWeightEntry, removeWeightEntry, openEditModal, advanceActiveProgram, setToast } = useAppStore()
+  const { weights, programs, addWeightEntry, removeWeightEntry, openEditModal, advanceActiveProgram, setToast } = useAppStore()
 
-  // Auto-advance program day when all today's exercises are logged
+  // Auto-advance each program when all today's exercises are logged
   useEffect(() => {
-    if (!program) return
-    if (cycleInfo(program).isComplete) return
-    const day = program.days[program.currentDayIndex % program.days.length]
-    if (!day) return
-    if (isTodayDone(weights, day) && program.lastAdvancedDate !== today()) {
-      const newIndex = (program.currentDayIndex + 1) % program.days.length
-      advanceActiveProgram(newIndex, today())
+    for (const ap of programs) {
+      if (cycleInfo(ap).isComplete) continue
+      const day = ap.days[ap.currentDayIndex % ap.days.length]
+      if (!day || day.exercises.length === 0) continue
+      if (isTodayDone(weights, day) && ap.lastAdvancedDate !== today()) {
+        const newIndex = (ap.currentDayIndex + 1) % ap.days.length
+        advanceActiveProgram(ap.userProgramId, newIndex, today())
+      }
     }
   }, [weights])
 
   const exercises = [...new Set(weights.map(d => d.exercise))].sort()
 
+  const isAnyDeload = programs.some(ap => isDeloadDate(ap.startDate, today()))
+
   const getLastPerf = (n: string): WeightEntry | undefined =>
     n.trim()
       ? [...weights]
-          .filter(d => d.exercise.toLowerCase() === n.trim().toLowerCase() && !isDeloadDate(program?.startDate, d.date))
+          .filter(d =>
+            d.exercise.toLowerCase() === n.trim().toLowerCase() &&
+            !programs.some(ap => isDeloadDate(ap.startDate, d.date))
+          )
           .sort((a, b) => b.date.localeCompare(a.date))[0]
       : undefined
 
@@ -102,8 +108,9 @@ export function WeightsTab() {
     }
   }
 
-  const { isDeload, isComplete } = cycleInfo(program)
   const chartEx = selEx || exercises[0] || ''
+  // For chart, find the program that tracks the chart exercise (or first program)
+  const chartProgram = programs.find(ap => ap.days.some(d => d.exercises.includes(chartEx))) ?? programs[0]
   const chartData = weights
     .filter(d => d.exercise === chartEx)
     .sort((a, b) => a.date.localeCompare(b.date))
@@ -111,12 +118,11 @@ export function WeightsTab() {
       date: d.date.slice(5),
       maxWeight: Math.max(...d.sets.map(s => s.weight)),
       volume: d.sets.reduce((a, s) => a + s.weight * s.reps, 0),
-      deload: isDeloadDate(program?.startDate, d.date),
+      deload: chartProgram ? isDeloadDate(chartProgram.startDate, d.date) : false,
     }))
 
   const allWeightsSorted = [...weights].sort((a, b) => b.date.localeCompare(a.date))
 
-  // Group all entries by superset
   const recentGrouped: Array<{ type: 'single' | 'superset'; entries: WeightEntry[] }> = []
   const usedIds = new Set<string>()
   for (const entry of allWeightsSorted) {
@@ -134,30 +140,33 @@ export function WeightsTab() {
 
   return (
     <div className="flex flex-col gap-4">
-      {program && !isComplete && (
-        <TodaysPlan
-          program={program}
-          weights={weights}
-          onPickSingle={n => { setSsExercises(null); handleSelectEx(n); setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50) }}
-          onPickSingleWithSets={handlePickWithSets}
-          onPickSuperset={exArr => { setSsInitialSets(null); setSsExercises(exArr); setEx(''); setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50) }}
-          onPickSupersetDeload={(exArr, getLastFn) => {
-            const s0 = getLastFn(exArr[0])?.sets.map(s => ({ weight: s.weight, reps: Math.max(1, Math.round(s.reps * 0.7)) }))
-            const s1 = getLastFn(exArr[1])?.sets.map(s => ({ weight: s.weight, reps: Math.max(1, Math.round(s.reps * 0.7)) }))
-            setSsInitialSets({ sets0: s0, sets1: s1 })
-            setSsExercises(exArr); setEx('')
-            setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50)
-          }}
-        />
-      )}
+      {programs
+        .filter(ap => !cycleInfo(ap).isComplete)
+        .map(ap => (
+          <TodaysPlan
+            key={ap.userProgramId}
+            program={ap}
+            weights={weights}
+            onPickSingle={n => { setSsExercises(null); handleSelectEx(n); setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50) }}
+            onPickSingleWithSets={handlePickWithSets}
+            onPickSuperset={exArr => { setSsInitialSets(null); setSsExercises(exArr); setEx(''); setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50) }}
+            onPickSupersetDeload={(exArr, getLastFn) => {
+              const s0 = getLastFn(exArr[0])?.sets.map(s => ({ weight: s.weight, reps: Math.max(1, Math.round(s.reps * 0.7)) }))
+              const s1 = getLastFn(exArr[1])?.sets.map(s => ({ weight: s.weight, reps: Math.max(1, Math.round(s.reps * 0.7)) }))
+              setSsInitialSets({ sets0: s0, sets1: s1 })
+              setSsExercises(exArr); setEx('')
+              setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50)
+            }}
+          />
+        ))}
 
       {ssExercises && (
         <SupersetLogger
           exercises={ssExercises}
           weights={weights}
           date={date}
-          programStartDate={program?.startDate}
-          isDeload={isDeload}
+          programStartDate={chartProgram?.startDate}
+          isDeload={isAnyDeload}
           initialSets0={ssInitialSets?.sets0}
           initialSets1={ssInitialSets?.sets1}
           onSave={saveSS}
@@ -187,7 +196,6 @@ export function WeightsTab() {
             <Inp label="Date" type="date" value={date} onChange={e => setDate(e.target.value)} />
           </div>
 
-          {/* Sets grid */}
           <div className="mb-3">
             <div className="grid gap-1.5 mb-1.5" style={{ gridTemplateColumns: '28px minmax(0,1fr) minmax(0,1fr) 28px' }}>
               {['#', 'Weight (kg)', 'Reps', ''].map((h, i) => (
@@ -219,7 +227,6 @@ export function WeightsTab() {
         </Card>
       )}
 
-      {/* Exercise selector chips */}
       {exercises.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {exercises.map(e => (
@@ -228,7 +235,6 @@ export function WeightsTab() {
         </div>
       )}
 
-      {/* Chart */}
       {exercises.length > 0 && (
         <Card>
           <div className="flex items-center justify-between mb-2.5">
@@ -273,7 +279,6 @@ export function WeightsTab() {
         </Card>
       )}
 
-      {/* Recent entries */}
       <Card>
         <SecTitle>Recent</SecTitle>
         <HistoryList
