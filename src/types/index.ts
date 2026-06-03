@@ -62,10 +62,51 @@ export interface DonationEntry {
   notes: string
 }
 
+// ── Program v1.1: block-aware types ──────────────────────────────────────────
+
+export type BlockType =
+  | 'weight' | 'mobility' | 'conditioning'
+  | 'sport' | 'warmup' | 'recovery'
+
+export type TrainingTag =
+  | 'STRENGTH' | 'POWER' | 'PREHAB' | 'CORE'
+  | 'MOBILITY' | 'CONDITIONING' | 'WARMUP' | 'RECOVERY' | 'SKILL'
+
+export interface BlockExercise {
+  id?: string        // program_day_exercises.id, set after DB round-trip
+  name: string
+  tag?: TrainingTag
+  sets?: string      // '4', '3'
+  reps?: string      // '5', '30s per side', '3 rotations each direction'
+  weight?: string    // '87 kg', 'bodyweight', 'light cable'
+  duration?: string  // '5 min', '30 min'
+  tempo?: string
+  notes?: string
+}
+
+export interface ProgramBlock {
+  id?: string        // program_day_blocks.id, set after DB round-trip
+  name: string
+  type: BlockType
+  scheduledTime?: string   // 'HH:MM'
+  durationMinutes?: number
+  notes?: string
+  exercises: BlockExercise[]
+  supersets: [string, string][]
+  sortOrder: number
+}
+
 export interface ProgramDay {
   name: string
+  dayOfWeek?: string
+  focus?: string
+  // Flat — used by weight logger, isTodayDone, getGrouped.
+  // When blocks are present these are derived from the weight block(s) at load time.
   exercises: string[]
   supersets: [string, string][]
+  // v1.1 block structure — present for multi-block / protocol days
+  blocks?: ProgramBlock[]
+  recoveryNotes?: string[]
 }
 
 export interface Program {
