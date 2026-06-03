@@ -8,6 +8,7 @@ import type {
   SkillEntry,
   DonationEntry,
   Program,
+  ActiveProgram,
   EditModalTarget,
 } from '../types'
 import { getOrCreateUser } from '../lib/db/user'
@@ -17,7 +18,14 @@ import {
   deleteWeightEntry,
   updateWeightEntry,
 } from '../lib/db/weights'
-import { loadActiveProgram, saveProgram, advanceProgram, deleteProgram, restartProgram } from '../lib/db/program'
+import {
+  loadActivePrograms,
+  saveProgram,
+  advanceProgram,
+  pauseProgram,
+  hardDeleteProgram,
+  restartProgram,
+} from '../lib/db/program'
 import { loadBodyweight, saveBodyweightEntry, deleteBodyweightEntry, updateBodyweightEntry } from '../lib/db/bodyweight'
 import { loadCardio, saveCardioEntry, deleteCardioEntry, updateCardioEntry } from '../lib/db/cardio'
 import { loadMobility, saveMobilityEntry, deleteMobilityEntry, updateMobilityEntry } from '../lib/db/mobility'
@@ -29,8 +37,6 @@ import type { LiftSet } from '../types'
 interface AppStore extends AppState {
   loading: boolean
   toast: string
-  programId: string | null
-  userProgramId: string | null
 
   // Edit modal
   editModal: EditModalTarget | null
@@ -43,7 +49,6 @@ interface AppStore extends AppState {
   setMobility: (mobility: AppState['mobility']) => void
   setSkills: (skills: AppState['skills']) => void
   setDonations: (donations: AppState['donations']) => void
-  setProgram: (program: AppState['program']) => void
   setToast: (msg: string) => void
 
   bootstrap: () => Promise<void>
@@ -53,11 +58,12 @@ interface AppStore extends AppState {
   removeWeightEntry: (id: string) => Promise<void>
   editWeightEntry: (id: string, patch: { sets: LiftSet[]; date?: string }) => Promise<void>
 
-  // Program
-  saveActiveProgram: (program: Program) => Promise<void>
-  advanceActiveProgram: (newIndex: number, date: string) => Promise<void>
-  restartActiveProgram: (startDate: string) => Promise<void>
-  removeProgram: () => Promise<void>
+  // Programs
+  saveActiveProgram: (program: Program, programId?: string, userProgramId?: string) => Promise<void>
+  advanceActiveProgram: (userProgramId: string, newIndex: number, date: string) => Promise<void>
+  restartActiveProgram: (userProgramId: string, startDate: string) => Promise<void>
+  pauseActiveProgram: (userProgramId: string) => Promise<void>
+  removeProgram: (programId: string, userProgramId: string) => Promise<void>
 
   // Bodyweight
   addBodyweightEntry: (entry: Omit<BodyweightEntry, 'id'>) => Promise<void>
@@ -92,11 +98,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
   mobility: [],
   skills: [],
   donations: [],
-  program: null,
+  programs: [],
   loading: true,
   toast: '',
-  programId: null,
-  userProgramId: null,
   editModal: null,
 
   // ── Edit modal ──────────────────────────────────────────────────────────────
@@ -110,7 +114,6 @@ export const useAppStore = create<AppStore>((set, get) => ({
   setMobility: (mobility) => set({ mobility }),
   setSkills: (skills) => set({ skills }),
   setDonations: (donations) => set({ donations }),
-  setProgram: (program) => set({ program }),
   setToast: (toast) => {
     set({ toast })
     if (toast) setTimeout(() => set({ toast: '' }), 3000)
@@ -121,9 +124,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({ loading: true })
     try {
       await getOrCreateUser()
-      const [weights, activeProg, bodyweight, cardio, mobility, skills, donations] = await Promise.all([
+      const [weights, activePrograms, bodyweight, cardio, mobility, skills, donations] = await Promise.all([
         loadWeights(),
-        loadActiveProgram(),
+        loadActivePrograms(),
         loadBodyweight(),
         loadCardio(),
         loadMobility(),
@@ -138,9 +141,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         mobility,
         skills,
         donations,
-        program: activeProg?.program ?? null,
-        programId: activeProg?.programId ?? null,
-        userProgramId: activeProg?.userProgramId ?? null,
+        programs: activePrograms,
       })
     } finally {
       set({ loading: false })
@@ -167,28 +168,41 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }))
   },
 
-  // ── Program ──────────────────────────────────────────────────────────────────
-  saveActiveProgram: async (program) => {
-    const { programId, userProgramId } = get()
-    const result = await saveProgram(program, programId ?? undefined, userProgramId ?? undefined)
-    set({ program: result.program, programId: result.programId, userProgramId: result.userProgramId })
+  // ── Programs ─────────────────────────────────────────────────────────────────
+  saveActiveProgram: async (program, programId, userProgramId) => {
+    const result = await saveProgram(program, programId, userProgramId)
+    set(s => {
+      const others = s.programs.filter(p => p.userProgramId !== result.userProgramId)
+      return { programs: [...others, result] }
+    })
   },
-  advanceActiveProgram: async (newIndex, date) => {
-    const { userProgramId, program } = get()
-    if (!userProgramId || !program) return
+  advanceActiveProgram: async (userProgramId, newIndex, date) => {
     await advanceProgram(userProgramId, newIndex, date)
-    set({ program: { ...program, currentDayIndex: newIndex, lastAdvancedDate: date } })
+    set(s => ({
+      programs: s.programs.map(p =>
+        p.userProgramId === userProgramId
+          ? { ...p, currentDayIndex: newIndex, lastAdvancedDate: date }
+          : p
+      ),
+    }))
   },
-  restartActiveProgram: async (startDate) => {
-    const { userProgramId, program } = get()
-    if (!userProgramId || !program) return
+  restartActiveProgram: async (userProgramId, startDate) => {
     await restartProgram(userProgramId, startDate)
-    set({ program: { ...program, startDate, currentDayIndex: 0, lastAdvancedDate: startDate } })
+    set(s => ({
+      programs: s.programs.map(p =>
+        p.userProgramId === userProgramId
+          ? { ...p, startDate, currentDayIndex: 0, lastAdvancedDate: startDate }
+          : p
+      ),
+    }))
   },
-  removeProgram: async () => {
-    const { programId, userProgramId } = get()
-    if (programId && userProgramId) await deleteProgram(programId, userProgramId)
-    set({ program: null, programId: null, userProgramId: null })
+  pauseActiveProgram: async (userProgramId) => {
+    await pauseProgram(userProgramId)
+    set(s => ({ programs: s.programs.filter(p => p.userProgramId !== userProgramId) }))
+  },
+  removeProgram: async (programId, userProgramId) => {
+    await hardDeleteProgram(programId, userProgramId)
+    set(s => ({ programs: s.programs.filter(p => p.userProgramId !== userProgramId) }))
   },
 
   // ── Bodyweight ───────────────────────────────────────────────────────────────

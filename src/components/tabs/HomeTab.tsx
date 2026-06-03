@@ -4,28 +4,83 @@ import { cycleInfo, getGrouped, weekKey, today } from '../../lib/utils'
 import { CYCLE } from '../../constants/app'
 import { Card, SecTitle } from '../ui/Card'
 import { MiniChart } from '../ui/MiniChart'
+import type { ActiveProgram } from '../../types'
 
 interface HomeTabProps {
   setTab: (t: string) => void
 }
 
+function ProgramHeroCard({ ap, setTab }: { ap: ActiveProgram; setTab: (t: string) => void }) {
+  const { week, isDeload, isComplete } = cycleInfo(ap)
+  const progDay = ap.days[ap.currentDayIndex % ap.days.length]
+
+  if (isComplete) {
+    return (
+      <button
+        onClick={() => setTab('Program')}
+        className="text-left w-full rounded-2xl p-4 bg-accent-l border-2 border-accent"
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-wide mb-0.5 text-accent">
+              🎉 Cycle Complete
+            </p>
+            <p className="text-sm font-bold mb-0.5 text-accent">{ap.name}</p>
+            <p className="text-xs text-accent/70">Tap to restart or configure a new program</p>
+          </div>
+          <span className="text-2xl text-accent/60">→</span>
+        </div>
+      </button>
+    )
+  }
+
+  return (
+    <button
+      onClick={() => setTab('Program')}
+      className={`text-left w-full rounded-2xl p-4 ${isDeload ? 'bg-dl-bg border-2 border-dl-bd' : 'bg-primary shadow-lg'}`}
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <p className={`text-[11px] font-semibold uppercase tracking-wide mb-0.5 ${isDeload ? 'text-dl-tx' : 'text-white/60'}`}>
+            {isDeload ? `⚠️ Deload — ${ap.name}` : `${ap.name} · Week ${week} of ${CYCLE}`}
+          </p>
+          <p className={`text-sm font-bold mb-0.5 ${isDeload ? 'text-dl-tx' : 'text-white'}`}>
+            {progDay?.name || 'No day set'}
+          </p>
+          <p className={`text-xs ${isDeload ? 'text-dl-tx' : 'text-white/50'}`}>
+            {getGrouped(progDay).map(g =>
+              g.type === 'superset' ? `[SS: ${g.exercises.join('+')}]` : g.exercises[0]
+            ).join(' · ')}
+          </p>
+        </div>
+        <span className={`text-2xl ${isDeload ? 'text-dl-tx' : 'text-white/70'}`}>→</span>
+      </div>
+      {!isDeload && (
+        <div className="flex gap-1 mt-3">
+          {Array.from({ length: CYCLE }, (_, i) => (
+            <div
+              key={i}
+              className={`flex-1 h-0.5 rounded-full ${i < week - 1 ? 'bg-white/90' : i === week - 1 ? 'bg-white/50' : 'bg-white/15'}`}
+            />
+          ))}
+        </div>
+      )}
+    </button>
+  )
+}
+
 export function HomeTab({ setTab }: HomeTabProps) {
-  const { weights, bodyweight, cardio, mobility, skills, donations, program } = useAppStore()
+  const { weights, bodyweight, cardio, mobility, skills, donations, programs } = useAppStore()
   const { sections } = usePrefs()
 
-  // Helper: is a given section enabled for home?
   const homeOn = (key: string) => {
-    if (sections.length === 0) return true // not loaded yet — show everything
+    if (sections.length === 0) return true
     return sections.find(s => s.sectionKey === key)?.showInHome ?? true
   }
 
-  // Sort order for the optional home cards (mirrors prefs order)
   const sectionOrder = sections.length > 0
     ? Object.fromEntries(sections.map(s => [s.sectionKey, s.sortOrder]))
     : {} as Record<string, number>
-
-  const { week, isDeload, isComplete } = cycleInfo(program)
-  const progDay = program ? program.days[program.currentDayIndex % program.days.length] : null
 
   // Charts
   const bwChart = [...bodyweight]
@@ -46,7 +101,6 @@ export function HomeTab({ setTab }: HomeTabProps) {
     .slice(-8)
     .map(d => ({ x: d.date.slice(5), y: d.duration }))
 
-  // This week stats
   const thisWeek = weekKey(today())
   const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7)
   const weekStr = weekAgo.toISOString().slice(0, 10)
@@ -55,11 +109,9 @@ export function HomeTab({ setTab }: HomeTabProps) {
   const mobWeek = mobility.filter(d => d.date >= weekStr).length
   const latestBw = [...bodyweight].sort((a, b) => b.date.localeCompare(a.date))[0]
 
-  // Skills this week
   const skillWeekMap: Record<string, number> = {}
   skills.forEach(s => { if (weekKey(s.date) === thisWeek) skillWeekMap[s.skill] = (skillWeekMap[s.skill] || 0) + 1 })
 
-  // Donation eligibility
   const lastFull = [...donations].filter(d => d.type === 'Full Blood').sort((a, b) => b.date.localeCompare(a.date))[0]
   const nextDonDate = lastFull
     ? new Date(new Date(lastFull.date).getTime() + 56 * 86400000).toISOString().slice(0, 10)
@@ -69,68 +121,20 @@ export function HomeTab({ setTab }: HomeTabProps) {
     : null
 
   const statsGridAll = [
-    { label: 'Lifts',    value: liftWeek,                            emoji: '🏋️', tab: 'Weights',     sectionKey: 'Weights' },
-    { label: 'Cardio',   value: cardioWeek,                          emoji: '❤️', tab: 'Cardio',      sectionKey: 'Cardio' },
-    { label: 'Mobility', value: mobWeek,                             emoji: '🧘', tab: 'Mobility',    sectionKey: 'Mobility' },
+    { label: 'Lifts',    value: liftWeek,                              emoji: '🏋️', tab: 'Weights',     sectionKey: 'Weights' },
+    { label: 'Cardio',   value: cardioWeek,                            emoji: '❤️', tab: 'Cardio',      sectionKey: 'Cardio' },
+    { label: 'Mobility', value: mobWeek,                               emoji: '🧘', tab: 'Mobility',    sectionKey: 'Mobility' },
     { label: 'Weight',   value: latestBw ? `${latestBw.weight}` : '–', emoji: '⚖️', tab: 'Body Weight', sectionKey: 'Body Weight' },
   ]
   const statsGrid = statsGridAll.filter(s => homeOn(s.sectionKey))
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Program hero card */}
-      {program ? (
-        isComplete ? (
-          <button
-            onClick={() => setTab('Program')}
-            className="text-left w-full rounded-2xl p-4 bg-accent-l border-2 border-accent"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wide mb-0.5 text-accent">
-                  🎉 Cycle Complete
-                </p>
-                <p className="text-sm font-bold mb-0.5 text-accent">
-                  {program.name}
-                </p>
-                <p className="text-xs text-accent/70">Tap to restart or configure a new program</p>
-              </div>
-              <span className="text-2xl text-accent/60">→</span>
-            </div>
-          </button>
-        ) : (
-          <button
-            onClick={() => setTab('Program')}
-            className={`text-left w-full rounded-2xl p-4 ${isDeload ? 'bg-dl-bg border-2 border-dl-bd' : 'bg-primary shadow-lg'}`}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className={`text-[11px] font-semibold uppercase tracking-wide mb-0.5 ${isDeload ? 'text-dl-tx' : 'text-white/60'}`}>
-                  {isDeload ? '⚠️ Deload Week' : `Week ${week} of ${CYCLE}`}
-                </p>
-                <p className={`text-sm font-bold mb-0.5 ${isDeload ? 'text-dl-tx' : 'text-white'}`}>
-                  {progDay?.name || 'No day set'}
-                </p>
-                <p className={`text-xs ${isDeload ? 'text-dl-tx' : 'text-white/50'}`}>
-                  {getGrouped(progDay).map(g =>
-                    g.type === 'superset' ? `[SS: ${g.exercises.join('+')}]` : g.exercises[0]
-                  ).join(' · ')}
-                </p>
-              </div>
-              <span className={`text-2xl ${isDeload ? 'text-dl-tx' : 'text-white/70'}`}>→</span>
-            </div>
-            {!isDeload && (
-              <div className="flex gap-1 mt-3">
-                {Array.from({ length: CYCLE }, (_, i) => (
-                  <div
-                    key={i}
-                    className={`flex-1 h-0.5 rounded-full ${i < week - 1 ? 'bg-white/90' : i === week - 1 ? 'bg-white/50' : 'bg-white/15'}`}
-                  />
-                ))}
-              </div>
-            )}
-          </button>
-        )
+      {/* Program hero cards */}
+      {programs.length > 0 ? (
+        programs.map(ap => (
+          <ProgramHeroCard key={ap.userProgramId} ap={ap} setTab={setTab} />
+        ))
       ) : (
         <button
           onClick={() => setTab('Program')}
