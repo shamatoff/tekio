@@ -13,7 +13,7 @@ export async function loadCardio(): Promise<CardioEntry[]> {
     id: r.id,
     date: r.session_date,
     type: (CARDIO_TYPE_REVERSE[r.activity_type] ?? r.activity_type) as CardioEntry['type'],
-    duration: r.duration_minutes,
+    duration: Number(r.duration_minutes),
     distance: r.distance_km ? Number(r.distance_km) : undefined,
     notes: r.notes ?? undefined,
   }))

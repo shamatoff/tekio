@@ -24,7 +24,7 @@ export function ExportPane({ onClose }: ExportPaneProps) {
       mobility: f(store.mobility),
       skills: f(store.skills),
       donations: f(store.donations),
-      program: store.program,
+      programs: store.programs,
     }
     const json = JSON.stringify(filtered, null, 2)
 

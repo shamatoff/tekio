@@ -8,7 +8,6 @@ import type {
   SkillEntry,
   DonationEntry,
   Program,
-  ActiveProgram,
   EditModalTarget,
 } from '../types'
 import { getOrCreateUser } from '../lib/db/user'
@@ -91,7 +90,7 @@ interface AppStore extends AppState {
   editDonationEntry: (id: string, patch: Omit<DonationEntry, 'id'>) => Promise<void>
 }
 
-export const useAppStore = create<AppStore>((set, get) => ({
+export const useAppStore = create<AppStore>((set) => ({
   weights: [],
   bodyweight: [],
   cardio: [],
