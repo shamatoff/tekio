@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Line } from 'recharts'
 import { useAppStore } from '../../store/app'
-import { today } from '../../lib/utils'
+import { today, parseDurationMins, formatDurationMins, calcPace } from '../../lib/utils'
 import { CARDIO_TYPES, CARDIO_ICONS } from '../../constants/app'
 import { Card, SecTitle } from '../ui/Card'
 import { Inp } from '../ui/Input'
@@ -19,12 +19,16 @@ export function CardioTab() {
   const [filter, setFilter] = useState('All')
   const { cardio, addCardioEntry, removeCardioEntry, openEditModal, setToast } = useAppStore()
 
+  const durationMins = parseDurationMins(duration)
+  const distKm = distance ? +distance : 0
+  const livePace = calcPace(durationMins, distKm)
+
   const add = async () => {
-    if (!duration) return
+    if (!durationMins) return
     try {
       await addCardioEntry({
-        date, type, duration: +duration,
-        distance: distance ? +distance : undefined,
+        date, type, duration: durationMins,
+        distance: distKm || undefined,
         notes: notes || undefined,
       })
       setDuration(''); setDistance(''); setNotes('')
@@ -38,7 +42,11 @@ export function CardioTab() {
   const chartData = cardio
     .filter(d => d.type === ct)
     .sort((a, b) => a.date.localeCompare(b.date))
-    .map(d => ({ date: d.date.slice(5), duration: d.duration, ...(d.distance ? { distance: d.distance } : {}) }))
+    .map(d => ({
+      date: d.date.slice(5),
+      duration: +d.duration.toFixed(2),
+      ...(d.distance ? { distance: d.distance, pace: +(d.duration / d.distance).toFixed(2) } : {}),
+    }))
 
   const allSorted = [...cardio].sort((a, b) => b.date.localeCompare(a.date))
 
@@ -58,8 +66,28 @@ export function CardioTab() {
             </select>
           </div>
           <Inp label="Date" type="date" value={date} onChange={e => setDate(e.target.value)} />
-          <Inp label="Duration (min)" type="number" value={duration} onChange={e => setDuration(e.target.value)} placeholder="30" />
-          <Inp label="Distance (km, opt.)" type="number" value={distance} onChange={e => setDistance(e.target.value)} placeholder="5.0" step="0.01" />
+          <div>
+            <Inp
+              label="Duration (MM:SS)"
+              type="text"
+              value={duration}
+              onChange={e => setDuration(e.target.value)}
+              placeholder="30:00"
+            />
+          </div>
+          <div>
+            <Inp
+              label="Distance (km, opt.)"
+              type="number"
+              value={distance}
+              onChange={e => setDistance(e.target.value)}
+              placeholder="5.0"
+              step="0.01"
+            />
+            {livePace && (
+              <p className="text-xs text-accent font-medium mt-1">⚡ {livePace}</p>
+            )}
+          </div>
           <div className="col-span-2">
             <Inp label="Notes (opt.)" value={notes} onChange={e => setNotes(e.target.value)} placeholder="e.g. Easy zone 2" />
           </div>
@@ -84,8 +112,8 @@ export function CardioTab() {
               <YAxis tick={{ fontSize: 10, fill: '#64748b' }} />
               <Tooltip />
               <Line type="monotone" dataKey="duration" stroke="#6366f1" strokeWidth={2.5} dot={false} name="Duration (min)" />
-              {chartData.some(d => (d as { distance?: number }).distance) && (
-                <Line type="monotone" dataKey="distance" stroke="#10b981" strokeWidth={1.5} strokeDasharray="5 5" dot={false} name="Distance (km)" />
+              {chartData.some(d => d.distance) && (
+                <Line type="monotone" dataKey="pace" stroke="#10b981" strokeWidth={1.5} strokeDasharray="5 5" dot={false} name="Pace (min/km)" />
               )}
             </LineChart>
           </ResponsiveContainer>
@@ -108,7 +136,11 @@ export function CardioTab() {
               <div>
                 <span className="text-base mr-1.5">{CARDIO_ICONS[d.type]}</span>
                 <span className="text-sm font-medium text-primary">{d.type}</span>
-                <span className="text-xs text-muted ml-2">{d.duration}min{d.distance ? ` · ${d.distance}km` : ''}</span>
+                <span className="text-xs text-muted ml-2">
+                  {formatDurationMins(d.duration)}
+                  {d.distance ? ` · ${d.distance}km` : ''}
+                  {d.distance ? ` · ${calcPace(d.duration, d.distance)}` : ''}
+                </span>
                 {d.notes && <span className="text-xs text-muted italic ml-1.5">— {d.notes}</span>}
               </div>
               <div className="flex items-center gap-1.5">

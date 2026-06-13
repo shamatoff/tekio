@@ -24,3 +24,6 @@ npm-debug.log*
 
 # TypeScript
 *.tsbuildinfo
+
+# Playwright ad-hoc tests (gitignored, used with MCP)
+playwright-tests/

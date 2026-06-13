@@ -7,7 +7,6 @@ import { saveCardioEntry } from '../../lib/db/cardio'
 import { saveMobilityEntry } from '../../lib/db/mobility'
 import { saveSkillEntry } from '../../lib/db/skills'
 import { saveDonationEntry } from '../../lib/db/donations'
-import { saveProgram } from '../../lib/db/program'
 import type { WeightEntry, BodyweightEntry, CardioEntry, MobilityEntry, SkillEntry, DonationEntry, Program } from '../../types'
 import { Btn } from '../ui/Button'
 
@@ -94,9 +93,8 @@ export function ImportPane({ onClose }: ImportPaneProps) {
       store.setSkills(newSkills)
       store.setDonations(newDonations)
 
-      if (p.program && !store.program) {
-        const result = await saveProgram(p.program as Program)
-        store.setProgram(result.program)
+      if (p.program && store.programs.length === 0) {
+        await store.saveActiveProgram(p.program as Program)
       }
 
       store.setToast('✅ Data imported!')

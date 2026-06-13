@@ -105,6 +105,36 @@ export function defaultProgram(): Program {
   }
 }
 
+// ── Cardio duration helpers ───────────────────────────────────────────────────
+
+/** Parses "MM:SS" or plain minutes string → decimal minutes */
+export function parseDurationMins(raw: string): number {
+  const s = raw.trim()
+  if (s.includes(':')) {
+    const [mStr, sStr] = s.split(':')
+    const m = parseInt(mStr, 10) || 0
+    const sec = Math.min(parseInt(sStr, 10) || 0, 59)
+    return m + sec / 60
+  }
+  return parseFloat(s) || 0
+}
+
+/** Formats decimal minutes → "MM:SS" */
+export function formatDurationMins(mins: number): string {
+  const m = Math.floor(mins)
+  const s = Math.round((mins - m) * 60)
+  return `${m}:${String(s).padStart(2, '0')}`
+}
+
+/** Returns pace string "M:SS/km" or empty string if data missing */
+export function calcPace(mins: number, distKm: number): string {
+  if (!distKm || !mins) return ''
+  const paceMin = mins / distKm
+  const m = Math.floor(paceMin)
+  const s = Math.round((paceMin - m) * 60)
+  return `${m}:${String(s).padStart(2, '0')}/km`
+}
+
 export function isTodayDone(
   weights: WeightEntry[],
   day: ProgramDay | null | undefined,

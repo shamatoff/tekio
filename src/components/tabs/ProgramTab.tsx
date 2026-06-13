@@ -5,7 +5,7 @@ import { CYCLE } from '../../constants/app'
 import { Card, SecTitle, EmptyMsg } from '../ui/Card'
 import { Btn, DelBtn } from '../ui/Button'
 import { SSBadge } from '../ui/Badges'
-import type { Program, ProgramDay, ActiveProgram } from '../../types'
+import type { Program, ProgramDay, ActiveProgram, WeightEntry } from '../../types'
 
 // ── Program Editor ────────────────────────────────────────────────────────────
 
@@ -172,7 +172,7 @@ function ProgramCard({
   onDelete,
 }: {
   ap: ActiveProgram
-  weights: ReturnType<typeof useAppStore>['weights']
+  weights: WeightEntry[]
   onEdit: () => void
   onAdvance: () => void
   onRestart: () => void

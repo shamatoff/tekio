@@ -32,8 +32,8 @@ export function AppShell({ tab, setTab, children }: AppShellProps) {
   const [importing, setImporting] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [inputFocused, setInputFocused] = useState(false)
-  const program = useAppStore(s => s.program)
-  const { isDeload, week } = cycleInfo(program)
+  const programs = useAppStore(s => s.programs)
+  const { isDeload, week } = cycleInfo(programs[0] ?? null)
 
   useEffect(() => {
     const INPUTS = ['INPUT', 'TEXTAREA', 'SELECT']

@@ -1,4 +1,5 @@
 import { useState, useRef, useMemo } from 'react'
+import { parseDurationMins, formatDurationMins, calcPace } from '../../lib/utils'
 import { useAppStore } from '../../store/app'
 import { Modal } from './Modal'
 import { SetsGrid } from './SetsGrid'
@@ -189,18 +190,22 @@ function CardioForm({ record, onClose, saveRef }: { record: CardioEntry; onClose
   const setToast = useAppStore(s => s.setToast)
   const [date, setDate] = useState(record.date)
   const [type, setType] = useState(record.type)
-  const [duration, setDuration] = useState(String(record.duration))
+  const [duration, setDuration] = useState(formatDurationMins(record.duration))
   const [distance, setDistance] = useState(record.distance != null ? String(record.distance) : '')
   const [notes, setNotes] = useState(record.notes ?? '')
 
+  const durationMins = parseDurationMins(duration)
+  const distKm = distance ? +distance : 0
+  const livePace = calcPace(durationMins, distKm)
+
   const save = async () => {
-    if (!duration) return
+    if (!durationMins) return
     try {
       await editCardioEntry(record.id, {
         date,
         type,
-        duration: +duration,
-        distance: distance ? +distance : undefined,
+        duration: durationMins,
+        distance: distKm || undefined,
         notes: notes || undefined,
       })
       setToast('✅ Updated!')
@@ -222,22 +227,24 @@ function CardioForm({ record, onClose, saveRef }: { record: CardioEntry; onClose
         />
         <Inp label="Date" type="date" value={date} onChange={e => setDate(e.target.value)} />
         <Inp
-          label="Duration (min)"
-          type="number"
+          label="Duration (MM:SS)"
+          type="text"
           value={duration}
           onChange={e => setDuration(e.target.value)}
-          placeholder="30"
-          min="1"
+          placeholder="30:00"
         />
-        <Inp
-          label="Distance (km, opt.)"
-          type="number"
-          value={distance}
-          onChange={e => setDistance(e.target.value)}
-          placeholder="5.0"
-          step="0.01"
-          min="0"
-        />
+        <div>
+          <Inp
+            label="Distance (km, opt.)"
+            type="number"
+            value={distance}
+            onChange={e => setDistance(e.target.value)}
+            placeholder="5.0"
+            step="0.01"
+            min="0"
+          />
+          {livePace && <p className="text-xs text-accent font-medium mt-1">⚡ {livePace}</p>}
+        </div>
       </div>
       <Inp
         label="Notes (opt.)"
