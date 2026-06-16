@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 
 type Variant = 'primary' | 'secondary' | 'danger' | 'ss' | 'ghost'
@@ -29,14 +30,37 @@ export function Btn({ variant = 'primary', children, small, className = '', ...p
 
 interface DelBtnProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   label?: string
+  noConfirm?: boolean
 }
 
-export function DelBtn({ label = 'Delete', className = '', ...props }: DelBtnProps) {
+export function DelBtn({ label = 'Delete', onClick, noConfirm = false, className = '', ...rest }: DelBtnProps) {
+  const [confirming, setConfirming] = useState(false)
+
+  if (confirming) {
+    return (
+      <span className="inline-flex items-center gap-1">
+        <button
+          onClick={e => { setConfirming(false); onClick?.(e) }}
+          className="px-2 py-0.5 text-[11px] font-semibold text-white bg-danger rounded hover:opacity-90"
+        >
+          Yes
+        </button>
+        <button
+          onClick={() => setConfirming(false)}
+          className="px-2 py-0.5 text-[11px] font-semibold text-muted border border-border bg-surface rounded hover:bg-bg"
+        >
+          No
+        </button>
+      </span>
+    )
+  }
+
   return (
     <button
       aria-label={label}
+      onClick={noConfirm ? onClick : () => setConfirming(true)}
       className={`w-7 h-7 flex items-center justify-center text-danger hover:bg-danger/10 rounded transition-colors ${className}`}
-      {...props}
+      {...rest}
     >
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <polyline points="3 6 5 6 21 6" />

@@ -45,7 +45,7 @@ export function SetsGrid({ sets, revealed, onUpdate, onRemove, onRevealNext }: S
             className="w-full min-w-0 border border-border rounded-lg px-2.5 py-1.5 text-sm bg-surface text-primary focus:outline-none focus:ring-2 focus:ring-accent/40"
           />
           <div>
-            {visible.length > 1 && <DelBtn onClick={() => onRemove(i)} />}
+            {visible.length > 1 && <DelBtn noConfirm onClick={() => onRemove(i)} />}
           </div>
         </div>
       ))}

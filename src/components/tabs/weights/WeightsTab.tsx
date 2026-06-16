@@ -215,7 +215,7 @@ export function WeightsTab() {
                   type="number" placeholder="10" min="1"
                   className="w-full min-w-0 border border-border rounded-lg px-2.5 py-1.5 text-sm bg-surface text-primary focus:outline-none focus:ring-2 focus:ring-accent/40"
                 />
-                <div>{sets.slice(0, revealed).length > 1 && <DelBtn onClick={() => removeSet(i)} />}</div>
+                <div>{sets.slice(0, revealed).length > 1 && <DelBtn noConfirm onClick={() => removeSet(i)} />}</div>
               </div>
             ))}
             <button onClick={revealNext} className="text-xs text-accent mt-1">

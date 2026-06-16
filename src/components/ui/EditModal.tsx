@@ -310,7 +310,7 @@ function MobilityForm({ record, onClose, saveRef }: { record: MobilityEntry; onC
               placeholder={`Exercise ${i + 1}`}
               className="flex-1 min-w-0"
             />
-            <DelBtn onClick={() => removeEx(i)} />
+            <DelBtn noConfirm onClick={() => removeEx(i)} />
           </div>
           {/* Row 2: duration + notes */}
           <div className="grid grid-cols-2 gap-2">

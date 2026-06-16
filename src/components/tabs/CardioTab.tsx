@@ -132,22 +132,23 @@ export function CardioTab() {
           matchesCategory={(d, cat) => d.type === cat}
           emptyMessage="No sessions yet"
           renderItem={d => (
-            <div key={d.id} className="flex items-center justify-between py-2 border-b border-bg last:border-0">
-              <div>
-                <span className="text-base mr-1.5">{CARDIO_ICONS[d.type]}</span>
-                <span className="text-sm font-medium text-primary">{d.type}</span>
-                <span className="text-xs text-muted ml-2">
-                  {formatDurationMins(d.duration)}
-                  {d.distance ? ` · ${d.distance}km` : ''}
-                  {d.distance ? ` · ${calcPace(d.duration, d.distance)}` : ''}
-                </span>
-                {d.notes && <span className="text-xs text-muted italic ml-1.5">— {d.notes}</span>}
+            <div key={d.id} className="pb-2 mb-2 border-b border-bg last:border-0 last:mb-0">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-base">{CARDIO_ICONS[d.type]}</span>
+                  <span className="text-sm font-semibold text-primary">{d.type}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-muted">{d.date}</span>
+                  <EditBtn onClick={() => openEditModal({ type: 'cardio', record: d })} />
+                  <DelBtn onClick={() => removeCardioEntry(d.id)} />
+                </div>
               </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-muted">{d.date}</span>
-                <EditBtn onClick={() => openEditModal({ type: 'cardio', record: d })} />
-                <DelBtn onClick={() => removeCardioEntry(d.id)} />
-              </div>
+              <p className="text-xs text-muted mt-0.5 ml-0.5">
+                {formatDurationMins(d.duration)}
+                {d.distance ? ` · ${d.distance} km · ${calcPace(d.duration, d.distance)}` : ''}
+                {d.notes ? ` — ${d.notes}` : ''}
+              </p>
             </div>
           )}
         />
