@@ -6,8 +6,9 @@ import { Card, SecTitle } from '../ui/Card'
 import { Inp } from '../ui/Input'
 import { Btn, DelBtn, EditBtn } from '../ui/Button'
 import { SmartInput } from '../ui/SmartInput'
+import { TeammateInput } from '../ui/TeammateInput'
 import { HistoryList } from '../ui/HistoryList'
-import type { QualityRating, MatchResult } from '../../types'
+import type { QualityRating, MatchResult, NewSkillFlags } from '../../types'
 
 const STARS = [1, 2, 3, 4, 5]
 
@@ -19,12 +20,19 @@ export function SkillsTab() {
   const [notes, setNotes] = useState('')
   const [competitorName, setCompetitorName] = useState('')
   const [result, setResult] = useState<MatchResult | ''>('')
+  const [teammates, setTeammates] = useState<string[]>([])
+  const [newSkillHasCompetitor, setNewSkillHasCompetitor] = useState(false)
+  const [newSkillHasTeammate, setNewSkillHasTeammate] = useState(false)
   const [selSkill, setSelSkill] = useState('')
   const { skills, skillTypes, addSkillEntry, removeSkillEntry, openEditModal, setToast } = useAppStore()
 
   const allSkills = [...new Set(skills.map(d => d.skill))].sort()
   const allCompetitors = [...new Set(skills.map(d => d.competitorName).filter((c): c is string => !!c))].sort()
-  const hasCompetitor = skillTypes.find(t => t.name.toLowerCase() === skill.trim().toLowerCase())?.hasCompetitor ?? false
+  const allTeammates = [...new Set(skills.flatMap(d => d.teammateNames ?? []))].sort()
+  const existingType = skillTypes.find(t => t.name.toLowerCase() === skill.trim().toLowerCase())
+  const isNewSkill = skill.trim() !== '' && !existingType
+  const hasCompetitor = existingType ? existingType.hasCompetitor : (isNewSkill && newSkillHasCompetitor)
+  const hasTeammate = existingType ? existingType.hasTeammate : (isNewSkill && newSkillHasTeammate)
 
   const handleSelectSkill = (n: string) => {
     setSkill(n)
@@ -36,6 +44,9 @@ export function SkillsTab() {
 
   const add = async () => {
     if (!skill.trim()) return
+    const newSkillFlags: NewSkillFlags | undefined = isNewSkill
+      ? { hasCompetitor: newSkillHasCompetitor, hasTeammate: newSkillHasTeammate }
+      : undefined
     try {
       await addSkillEntry({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -46,8 +57,11 @@ export function SkillsTab() {
         notes,
         competitorName: hasCompetitor ? (competitorName.trim() || undefined) : undefined,
         result: hasCompetitor ? (result || undefined) : undefined,
-      })
-      setSkill(''); setNotes(''); setQuality(0); setWithTrainer(false); setCompetitorName(''); setResult('')
+        teammateNames: hasTeammate ? teammates : undefined,
+      }, newSkillFlags)
+      setSkill(''); setNotes(''); setQuality(0); setWithTrainer(false)
+      setCompetitorName(''); setResult(''); setTeammates([])
+      setNewSkillHasCompetitor(false); setNewSkillHasTeammate(false)
       setToast('✅ Session logged!')
     } catch {
       setToast('❌ Failed to save.')
@@ -80,6 +94,19 @@ export function SkillsTab() {
               placeholder="e.g. Tennis, Swimming"
             />
           </div>
+          {isNewSkill && (
+            <div className="flex flex-col gap-1.5 px-3 py-2 rounded-lg bg-bg border border-border">
+              <p className="text-xs text-muted font-medium">New skill — what should this track?</p>
+              <label className="flex items-center gap-2 text-xs text-primary">
+                <input type="checkbox" checked={newSkillHasCompetitor} onChange={e => setNewSkillHasCompetitor(e.target.checked)} />
+                Competitor (opponent + win/loss)
+              </label>
+              <label className="flex items-center gap-2 text-xs text-primary">
+                <input type="checkbox" checked={newSkillHasTeammate} onChange={e => setNewSkillHasTeammate(e.target.checked)} />
+                Teammate(s)
+              </label>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-2.5">
             <Inp label="Date" type="date" value={date} onChange={e => setDate(e.target.value)} />
             <div>
@@ -138,6 +165,12 @@ export function SkillsTab() {
                 </div>
               </div>
             </>
+          )}
+          {hasTeammate && (
+            <div>
+              <p className="text-xs text-muted font-medium mb-1">Teammate(s) (opt.)</p>
+              <TeammateInput teammates={teammates} onChange={setTeammates} suggestions={allTeammates} />
+            </div>
           )}
           <Inp label="Notes (opt.)" value={notes} onChange={e => setNotes(e.target.value)} placeholder="How did it go?" />
         </div>
@@ -205,6 +238,9 @@ export function SkillsTab() {
                 </div>
               </div>
               {d.competitorName && <p className="text-xs text-muted mt-1">vs {d.competitorName}</p>}
+              {d.teammateNames && d.teammateNames.length > 0 && (
+                <p className="text-xs text-muted mt-1">with {d.teammateNames.join(', ')}</p>
+              )}
               {d.notes && <p className="text-xs text-muted italic mt-1">{d.notes}</p>}
             </div>
           )}
