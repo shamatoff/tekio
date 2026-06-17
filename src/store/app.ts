@@ -28,7 +28,7 @@ import {
 import { loadBodyweight, saveBodyweightEntry, deleteBodyweightEntry, updateBodyweightEntry } from '../lib/db/bodyweight'
 import { loadCardio, saveCardioEntry, deleteCardioEntry, updateCardioEntry } from '../lib/db/cardio'
 import { loadMobility, saveMobilityEntry, deleteMobilityEntry, updateMobilityEntry } from '../lib/db/mobility'
-import { loadSkills, saveSkillEntry, deleteSkillEntry, updateSkillEntry } from '../lib/db/skills'
+import { loadSkills, loadSkillTypes, saveSkillEntry, deleteSkillEntry, updateSkillEntry } from '../lib/db/skills'
 import { loadDonations, saveDonationEntry, deleteDonationEntry, updateDonationEntry } from '../lib/db/donations'
 import { usePrefs } from './prefs'
 import type { LiftSet } from '../types'
@@ -47,6 +47,7 @@ interface AppStore extends AppState {
   setCardio: (cardio: AppState['cardio']) => void
   setMobility: (mobility: AppState['mobility']) => void
   setSkills: (skills: AppState['skills']) => void
+  setSkillTypes: (skillTypes: AppState['skillTypes']) => void
   setDonations: (donations: AppState['donations']) => void
   setToast: (msg: string) => void
 
@@ -96,6 +97,7 @@ export const useAppStore = create<AppStore>((set) => ({
   cardio: [],
   mobility: [],
   skills: [],
+  skillTypes: [],
   donations: [],
   programs: [],
   loading: true,
@@ -112,6 +114,7 @@ export const useAppStore = create<AppStore>((set) => ({
   setCardio: (cardio) => set({ cardio }),
   setMobility: (mobility) => set({ mobility }),
   setSkills: (skills) => set({ skills }),
+  setSkillTypes: (skillTypes) => set({ skillTypes }),
   setDonations: (donations) => set({ donations }),
   setToast: (toast) => {
     set({ toast })
@@ -123,13 +126,14 @@ export const useAppStore = create<AppStore>((set) => ({
     set({ loading: true })
     try {
       await getOrCreateUser()
-      const [weights, activePrograms, bodyweight, cardio, mobility, skills, donations] = await Promise.all([
+      const [weights, activePrograms, bodyweight, cardio, mobility, skills, skillTypes, donations] = await Promise.all([
         loadWeights(),
         loadActivePrograms(),
         loadBodyweight(),
         loadCardio(),
         loadMobility(),
         loadSkills(),
+        loadSkillTypes(),
         loadDonations(),
         usePrefs.getState().loadPrefs(),
       ])
@@ -139,6 +143,7 @@ export const useAppStore = create<AppStore>((set) => ({
         cardio,
         mobility,
         skills,
+        skillTypes,
         donations,
         programs: activePrograms,
       })

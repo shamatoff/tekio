@@ -18,6 +18,7 @@ import type {
   LiftSet,
   MobilityExercise,
   QualityRating,
+  MatchResult,
 } from '../../types'
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
@@ -343,12 +344,21 @@ function SkillForm({ record, onClose, saveRef }: { record: SkillEntry; onClose: 
   const editSkillEntry = useAppStore(s => s.editSkillEntry)
   const setToast = useAppStore(s => s.setToast)
   const skills = useAppStore(s => s.skills)
+  const skillTypes = useAppStore(s => s.skillTypes)
   const allSkills = useMemo(() => [...new Set(skills.map(d => d.skill))].sort(), [skills])
+  const allCompetitors = useMemo(
+    () => [...new Set(skills.map(d => d.competitorName).filter((c): c is string => !!c))].sort(),
+    [skills]
+  )
   const [date, setDate] = useState(record.date)
   const [skill, setSkill] = useState<string>(record.skill)
   const [withTrainer, setWithTrainer] = useState(record.withTrainer)
   const [quality, setQuality] = useState<number>(record.quality)
   const [notes, setNotes] = useState(record.notes)
+  const [competitorName, setCompetitorName] = useState(record.competitorName ?? '')
+  const [result, setResult] = useState<MatchResult | ''>(record.result ?? '')
+
+  const hasCompetitor = skillTypes.find(t => t.name.toLowerCase() === skill.trim().toLowerCase())?.hasCompetitor ?? false
 
   const save = async () => {
     if (!skill.trim()) return
@@ -359,6 +369,8 @@ function SkillForm({ record, onClose, saveRef }: { record: SkillEntry; onClose: 
         withTrainer,
         quality: quality as QualityRating,
         notes,
+        competitorName: hasCompetitor ? (competitorName.trim() || undefined) : undefined,
+        result: hasCompetitor ? (result || undefined) : undefined,
       })
       setToast('✅ Updated!')
       onClose()
@@ -417,6 +429,38 @@ function SkillForm({ record, onClose, saveRef }: { record: SkillEntry; onClose: 
           {quality > 0 && <span className="text-xs text-muted ml-1">{quality}/5</span>}
         </div>
       </div>
+
+      {hasCompetitor && (
+        <>
+          <div>
+            <p className="text-xs text-muted font-medium mb-1">Competitor (opt.)</p>
+            <SmartInput
+              value={competitorName}
+              onChange={setCompetitorName}
+              suggestions={allCompetitors}
+              placeholder="e.g. John Smith"
+            />
+          </div>
+          <div>
+            <p className="text-xs text-muted font-medium mb-1">Result</p>
+            <div className="flex gap-1.5">
+              {(['win', 'loss'] as MatchResult[]).map(r => (
+                <button
+                  key={r}
+                  onClick={() => setResult(rv => (rv === r ? '' : r))}
+                  className={`flex-1 py-2 rounded-lg text-xs font-semibold border transition-colors capitalize ${
+                    result === r
+                      ? 'border-accent bg-accent-l text-accent'
+                      : 'border-border bg-surface text-muted'
+                  }`}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
 
       <Inp
         label="Notes (opt.)"

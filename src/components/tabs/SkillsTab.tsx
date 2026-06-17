@@ -7,7 +7,7 @@ import { Inp } from '../ui/Input'
 import { Btn, DelBtn, EditBtn } from '../ui/Button'
 import { SmartInput } from '../ui/SmartInput'
 import { HistoryList } from '../ui/HistoryList'
-import type { QualityRating } from '../../types'
+import type { QualityRating, MatchResult } from '../../types'
 
 const STARS = [1, 2, 3, 4, 5]
 
@@ -17,10 +17,14 @@ export function SkillsTab() {
   const [withTrainer, setWithTrainer] = useState(false)
   const [quality, setQuality] = useState(0)
   const [notes, setNotes] = useState('')
+  const [competitorName, setCompetitorName] = useState('')
+  const [result, setResult] = useState<MatchResult | ''>('')
   const [selSkill, setSelSkill] = useState('')
-  const { skills, addSkillEntry, removeSkillEntry, openEditModal, setToast } = useAppStore()
+  const { skills, skillTypes, addSkillEntry, removeSkillEntry, openEditModal, setToast } = useAppStore()
 
   const allSkills = [...new Set(skills.map(d => d.skill))].sort()
+  const allCompetitors = [...new Set(skills.map(d => d.competitorName).filter((c): c is string => !!c))].sort()
+  const hasCompetitor = skillTypes.find(t => t.name.toLowerCase() === skill.trim().toLowerCase())?.hasCompetitor ?? false
 
   const handleSelectSkill = (n: string) => {
     setSkill(n)
@@ -33,9 +37,17 @@ export function SkillsTab() {
   const add = async () => {
     if (!skill.trim()) return
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await addSkillEntry({ skill: skill.trim() as any, date, withTrainer, quality: quality as QualityRating, notes })
-      setSkill(''); setNotes(''); setQuality(0); setWithTrainer(false)
+      await addSkillEntry({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        skill: skill.trim() as any,
+        date,
+        withTrainer,
+        quality: quality as QualityRating,
+        notes,
+        competitorName: hasCompetitor ? (competitorName.trim() || undefined) : undefined,
+        result: hasCompetitor ? (result || undefined) : undefined,
+      })
+      setSkill(''); setNotes(''); setQuality(0); setWithTrainer(false); setCompetitorName(''); setResult('')
       setToast('✅ Session logged!')
     } catch {
       setToast('❌ Failed to save.')
@@ -100,6 +112,33 @@ export function SkillsTab() {
               {quality > 0 && <span className="text-xs text-muted ml-1">{quality}/5</span>}
             </div>
           </div>
+          {hasCompetitor && (
+            <>
+              <div>
+                <p className="text-xs text-muted font-medium mb-1">Competitor (opt.)</p>
+                <SmartInput
+                  value={competitorName}
+                  onChange={setCompetitorName}
+                  suggestions={allCompetitors}
+                  placeholder="e.g. John Smith"
+                />
+              </div>
+              <div>
+                <p className="text-xs text-muted font-medium mb-1">Result</p>
+                <div className="flex gap-1.5">
+                  {(['win', 'loss'] as MatchResult[]).map(r => (
+                    <button
+                      key={r}
+                      onClick={() => setResult(rv => rv === r ? '' : r)}
+                      className={`flex-1 py-2 rounded-lg text-xs font-semibold border transition-colors capitalize ${result === r ? 'border-accent bg-accent-l text-accent' : 'border-border bg-surface text-muted'}`}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
           <Inp label="Notes (opt.)" value={notes} onChange={e => setNotes(e.target.value)} placeholder="How did it go?" />
         </div>
         <Btn onClick={add} className="w-full">Log Session</Btn>
@@ -153,6 +192,11 @@ export function SkillsTab() {
                   {d.quality > 0 && (
                     <span className="text-xs text-warning">{'★'.repeat(d.quality)}</span>
                   )}
+                  {d.result && (
+                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize ${d.result === 'win' ? 'text-green-700 bg-green-50' : 'text-red-700 bg-red-50'}`}>
+                      {d.result}
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs text-muted">{d.date}</span>
@@ -160,6 +204,7 @@ export function SkillsTab() {
                   <DelBtn onClick={() => removeSkillEntry(d.id)} />
                 </div>
               </div>
+              {d.competitorName && <p className="text-xs text-muted mt-1">vs {d.competitorName}</p>}
               {d.notes && <p className="text-xs text-muted italic mt-1">{d.notes}</p>}
             </div>
           )}
