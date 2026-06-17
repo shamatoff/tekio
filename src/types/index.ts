@@ -43,6 +43,7 @@ export interface MobilityEntry {
 
 export type SkillType = 'Tennis' | 'Swimming' | 'Volleyball'
 export type QualityRating = 1 | 2 | 3 | 4 | 5
+export type MatchResult = 'win' | 'loss'
 
 export interface SkillEntry {
   id: string
@@ -51,6 +52,13 @@ export interface SkillEntry {
   withTrainer: boolean
   quality: QualityRating
   notes: string
+  competitorName?: string
+  result?: MatchResult
+}
+
+export interface SkillTypeInfo {
+  name: string
+  hasCompetitor: boolean
 }
 
 export type DonationType = 'Full Blood' | 'Plasma'
@@ -87,6 +95,7 @@ export interface AppState {
   cardio: CardioEntry[]
   mobility: MobilityEntry[]
   skills: SkillEntry[]
+  skillTypes: SkillTypeInfo[]
   donations: DonationEntry[]
   programs: ActiveProgram[]
 }
