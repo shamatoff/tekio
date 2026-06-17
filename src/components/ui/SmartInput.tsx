@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import type { KeyboardEvent } from 'react'
 
 interface SmartInputProps {
   value: string
@@ -8,9 +9,10 @@ interface SmartInputProps {
   className?: string
   onFocus?: () => void
   onBlur?: () => void
+  onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void
 }
 
-export function SmartInput({ value, onChange, suggestions, placeholder, className = '', onFocus, onBlur }: SmartInputProps) {
+export function SmartInput({ value, onChange, suggestions, placeholder, className = '', onFocus, onBlur, onKeyDown }: SmartInputProps) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -35,6 +37,7 @@ export function SmartInput({ value, onChange, suggestions, placeholder, classNam
         onChange={e => { onChange(e.target.value); setOpen(true) }}
         onFocus={() => { setOpen(true); onFocus?.() }}
         onBlur={onBlur}
+        onKeyDown={onKeyDown}
         placeholder={placeholder}
         className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-surface text-primary placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/40"
       />

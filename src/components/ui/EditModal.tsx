@@ -7,6 +7,7 @@ import type { SetStr } from './SetsGrid'
 import { Inp, SelEl } from './Input'
 import { Btn, DelBtn } from './Button'
 import { SmartInput } from './SmartInput'
+import { TeammateInput } from './TeammateInput'
 import { CARDIO_TYPES, DONATION_TYPES } from '../../constants/app'
 import type {
   WeightEntry,
@@ -19,6 +20,7 @@ import type {
   MobilityExercise,
   QualityRating,
   MatchResult,
+  NewSkillFlags,
 } from '../../types'
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
@@ -350,6 +352,10 @@ function SkillForm({ record, onClose, saveRef }: { record: SkillEntry; onClose: 
     () => [...new Set(skills.map(d => d.competitorName).filter((c): c is string => !!c))].sort(),
     [skills]
   )
+  const allTeammates = useMemo(
+    () => [...new Set(skills.flatMap(d => d.teammateNames ?? []))].sort(),
+    [skills]
+  )
   const [date, setDate] = useState(record.date)
   const [skill, setSkill] = useState<string>(record.skill)
   const [withTrainer, setWithTrainer] = useState(record.withTrainer)
@@ -357,11 +363,20 @@ function SkillForm({ record, onClose, saveRef }: { record: SkillEntry; onClose: 
   const [notes, setNotes] = useState(record.notes)
   const [competitorName, setCompetitorName] = useState(record.competitorName ?? '')
   const [result, setResult] = useState<MatchResult | ''>(record.result ?? '')
+  const [teammates, setTeammates] = useState<string[]>(record.teammateNames ?? [])
+  const [newSkillHasCompetitor, setNewSkillHasCompetitor] = useState(false)
+  const [newSkillHasTeammate, setNewSkillHasTeammate] = useState(false)
 
-  const hasCompetitor = skillTypes.find(t => t.name.toLowerCase() === skill.trim().toLowerCase())?.hasCompetitor ?? false
+  const existingType = skillTypes.find(t => t.name.toLowerCase() === skill.trim().toLowerCase())
+  const isNewSkill = skill.trim() !== '' && !existingType
+  const hasCompetitor = existingType ? existingType.hasCompetitor : (isNewSkill && newSkillHasCompetitor)
+  const hasTeammate = existingType ? existingType.hasTeammate : (isNewSkill && newSkillHasTeammate)
 
   const save = async () => {
     if (!skill.trim()) return
+    const newSkillFlags: NewSkillFlags | undefined = isNewSkill
+      ? { hasCompetitor: newSkillHasCompetitor, hasTeammate: newSkillHasTeammate }
+      : undefined
     try {
       await editSkillEntry(record.id, {
         date,
@@ -371,7 +386,8 @@ function SkillForm({ record, onClose, saveRef }: { record: SkillEntry; onClose: 
         notes,
         competitorName: hasCompetitor ? (competitorName.trim() || undefined) : undefined,
         result: hasCompetitor ? (result || undefined) : undefined,
-      })
+        teammateNames: hasTeammate ? teammates : undefined,
+      }, newSkillFlags)
       setToast('✅ Updated!')
       onClose()
     } catch {
@@ -391,6 +407,20 @@ function SkillForm({ record, onClose, saveRef }: { record: SkillEntry; onClose: 
           placeholder="e.g. Tennis"
         />
       </div>
+
+      {isNewSkill && (
+        <div className="flex flex-col gap-1.5 px-3 py-2 rounded-lg bg-bg border border-border">
+          <p className="text-xs text-muted font-medium">New skill — what should this track?</p>
+          <label className="flex items-center gap-2 text-xs text-primary">
+            <input type="checkbox" checked={newSkillHasCompetitor} onChange={e => setNewSkillHasCompetitor(e.target.checked)} />
+            Competitor (opponent + win/loss)
+          </label>
+          <label className="flex items-center gap-2 text-xs text-primary">
+            <input type="checkbox" checked={newSkillHasTeammate} onChange={e => setNewSkillHasTeammate(e.target.checked)} />
+            Teammate(s)
+          </label>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-2.5">
         <Inp label="Date" type="date" value={date} onChange={e => setDate(e.target.value)} />
@@ -460,6 +490,13 @@ function SkillForm({ record, onClose, saveRef }: { record: SkillEntry; onClose: 
             </div>
           </div>
         </>
+      )}
+
+      {hasTeammate && (
+        <div>
+          <p className="text-xs text-muted font-medium mb-1">Teammate(s) (opt.)</p>
+          <TeammateInput teammates={teammates} onChange={setTeammates} suggestions={allTeammates} />
+        </div>
       )}
 
       <Inp

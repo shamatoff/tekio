@@ -1,17 +1,27 @@
 import { supabase } from '../supabase'
 import { USER_ID } from '../../constants/app'
-import type { SkillEntry, SkillTypeInfo, QualityRating, MatchResult } from '../../types'
+import type { SkillEntry, SkillTypeInfo, NewSkillFlags, QualityRating, MatchResult } from '../../types'
 
-async function getOrCreateSkillType(name: string): Promise<string> {
-  // Try insert first (idempotent)
-  await supabase
-    .from('skill_types')
-    .upsert({ user_id: USER_ID, name, is_system: false }, { onConflict: 'user_id,name' })
-  const { data, error } = await supabase
+async function getOrCreateSkillType(name: string, newSkillFlags?: NewSkillFlags): Promise<string> {
+  const { data: existing, error: selectError } = await supabase
     .from('skill_types')
     .select('id')
     .eq('user_id', USER_ID)
     .eq('name', name)
+    .maybeSingle()
+  if (selectError) throw selectError
+  if (existing) return existing.id
+
+  const { data, error } = await supabase
+    .from('skill_types')
+    .insert({
+      user_id: USER_ID,
+      name,
+      is_system: false,
+      has_competitor: newSkillFlags?.hasCompetitor ?? false,
+      has_teammate: newSkillFlags?.hasTeammate ?? false,
+    })
+    .select('id')
     .single()
   if (error) throw error
   return data.id
@@ -20,16 +30,16 @@ async function getOrCreateSkillType(name: string): Promise<string> {
 export async function loadSkillTypes(): Promise<SkillTypeInfo[]> {
   const { data, error } = await supabase
     .from('skill_types')
-    .select('name, has_competitor')
+    .select('name, has_competitor, has_teammate')
     .eq('user_id', USER_ID)
   if (error) throw error
-  return (data ?? []).map(r => ({ name: r.name, hasCompetitor: r.has_competitor }))
+  return (data ?? []).map(r => ({ name: r.name, hasCompetitor: r.has_competitor, hasTeammate: r.has_teammate }))
 }
 
 export async function loadSkills(): Promise<SkillEntry[]> {
   const { data, error } = await supabase
     .from('skill_sessions')
-    .select('id, session_date, with_trainer, quality, notes, competitor_name, result, skill_types(name)')
+    .select('id, session_date, with_trainer, quality, notes, competitor_name, result, teammate_names, skill_types(name)')
     .eq('user_id', USER_ID)
     .order('session_date', { ascending: false })
   if (error) throw error
@@ -42,11 +52,15 @@ export async function loadSkills(): Promise<SkillEntry[]> {
     notes: r.notes ?? '',
     competitorName: r.competitor_name ?? undefined,
     result: (r.result ?? undefined) as MatchResult | undefined,
+    teammateNames: r.teammate_names ?? undefined,
   }))
 }
 
-export async function saveSkillEntry(entry: Omit<SkillEntry, 'id'>): Promise<SkillEntry> {
-  const skillTypeId = await getOrCreateSkillType(entry.skill)
+export async function saveSkillEntry(
+  entry: Omit<SkillEntry, 'id'>,
+  newSkillFlags?: NewSkillFlags
+): Promise<SkillEntry> {
+  const skillTypeId = await getOrCreateSkillType(entry.skill, newSkillFlags)
   const { data, error } = await supabase
     .from('skill_sessions')
     .insert({
@@ -58,8 +72,9 @@ export async function saveSkillEntry(entry: Omit<SkillEntry, 'id'>): Promise<Ski
       notes: entry.notes || null,
       competitor_name: entry.competitorName || null,
       result: entry.result || null,
+      teammate_names: entry.teammateNames?.length ? entry.teammateNames : null,
     })
-    .select('id, session_date, with_trainer, quality, notes, competitor_name, result')
+    .select('id, session_date, with_trainer, quality, notes, competitor_name, result, teammate_names')
     .single()
   if (error) throw error
   return {
@@ -71,6 +86,7 @@ export async function saveSkillEntry(entry: Omit<SkillEntry, 'id'>): Promise<Ski
     notes: data.notes ?? '',
     competitorName: data.competitor_name ?? undefined,
     result: (data.result ?? undefined) as MatchResult | undefined,
+    teammateNames: data.teammate_names ?? undefined,
   }
 }
 
@@ -81,9 +97,10 @@ export async function deleteSkillEntry(id: string): Promise<void> {
 
 export async function updateSkillEntry(
   id: string,
-  patch: Omit<SkillEntry, 'id'>
+  patch: Omit<SkillEntry, 'id'>,
+  newSkillFlags?: NewSkillFlags
 ): Promise<void> {
-  const skillTypeId = await getOrCreateSkillType(patch.skill)
+  const skillTypeId = await getOrCreateSkillType(patch.skill, newSkillFlags)
   const { error } = await supabase
     .from('skill_sessions')
     .update({
@@ -94,6 +111,7 @@ export async function updateSkillEntry(
       notes: patch.notes || null,
       competitor_name: patch.competitorName || null,
       result: patch.result || null,
+      teammate_names: patch.teammateNames?.length ? patch.teammateNames : null,
     })
     .eq('id', id)
   if (error) throw error

@@ -6,6 +6,7 @@ import type {
   CardioEntry,
   MobilityEntry,
   SkillEntry,
+  NewSkillFlags,
   DonationEntry,
   Program,
   EditModalTarget,
@@ -81,9 +82,9 @@ interface AppStore extends AppState {
   editMobilityEntry: (id: string, patch: Omit<MobilityEntry, 'id'>) => Promise<void>
 
   // Skills
-  addSkillEntry: (entry: Omit<SkillEntry, 'id'>) => Promise<void>
+  addSkillEntry: (entry: Omit<SkillEntry, 'id'>, newSkillFlags?: NewSkillFlags) => Promise<void>
   removeSkillEntry: (id: string) => Promise<void>
-  editSkillEntry: (id: string, patch: Omit<SkillEntry, 'id'>) => Promise<void>
+  editSkillEntry: (id: string, patch: Omit<SkillEntry, 'id'>, newSkillFlags?: NewSkillFlags) => Promise<void>
 
   // Donations
   addDonationEntry: (entry: Omit<DonationEntry, 'id'>) => Promise<void>
@@ -260,17 +261,27 @@ export const useAppStore = create<AppStore>((set) => ({
   },
 
   // ── Skills ───────────────────────────────────────────────────────────────────
-  addSkillEntry: async (entry) => {
-    const saved = await saveSkillEntry(entry)
-    set(s => ({ skills: [saved, ...s.skills] }))
+  addSkillEntry: async (entry, newSkillFlags) => {
+    const saved = await saveSkillEntry(entry, newSkillFlags)
+    set(s => ({
+      skills: [saved, ...s.skills],
+      skillTypes: newSkillFlags
+        ? [...s.skillTypes.filter(t => t.name.toLowerCase() !== saved.skill.toLowerCase()), { name: saved.skill, ...newSkillFlags }]
+        : s.skillTypes,
+    }))
   },
   removeSkillEntry: async (id) => {
     await deleteSkillEntry(id)
     set(s => ({ skills: s.skills.filter(sk => sk.id !== id) }))
   },
-  editSkillEntry: async (id, patch) => {
-    await updateSkillEntry(id, patch)
-    set(s => ({ skills: s.skills.map(sk => (sk.id === id ? { ...sk, ...patch } : sk)) }))
+  editSkillEntry: async (id, patch, newSkillFlags) => {
+    await updateSkillEntry(id, patch, newSkillFlags)
+    set(s => ({
+      skills: s.skills.map(sk => (sk.id === id ? { ...sk, ...patch } : sk)),
+      skillTypes: newSkillFlags
+        ? [...s.skillTypes.filter(t => t.name.toLowerCase() !== patch.skill.toLowerCase()), { name: patch.skill, ...newSkillFlags }]
+        : s.skillTypes,
+    }))
   },
 
   // ── Donations ────────────────────────────────────────────────────────────────

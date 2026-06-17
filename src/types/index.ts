@@ -54,11 +54,18 @@ export interface SkillEntry {
   notes: string
   competitorName?: string
   result?: MatchResult
+  teammateNames?: string[]
 }
 
 export interface SkillTypeInfo {
   name: string
   hasCompetitor: boolean
+  hasTeammate: boolean
+}
+
+export interface NewSkillFlags {
+  hasCompetitor: boolean
+  hasTeammate: boolean
 }
 
 export type DonationType = 'Full Blood' | 'Plasma'
