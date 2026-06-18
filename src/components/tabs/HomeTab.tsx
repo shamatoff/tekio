@@ -71,7 +71,7 @@ function ProgramHeroCard({ ap, setTab }: { ap: ActiveProgram; setTab: (t: string
 
 export function HomeTab({ setTab }: HomeTabProps) {
   const { weights, bodyweight, cardio, mobility, skills, donations, programs } = useAppStore()
-  const { sections } = usePrefs()
+  const { sections, weekStartDay } = usePrefs()
 
   const homeOn = (key: string) => {
     if (sections.length === 0) return true
@@ -101,7 +101,7 @@ export function HomeTab({ setTab }: HomeTabProps) {
     .slice(-8)
     .map(d => ({ x: d.date.slice(5), y: d.duration }))
 
-  const thisWeek = weekKey(today())
+  const thisWeek = weekKey(today(), weekStartDay)
   const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7)
   const weekStr = weekAgo.toISOString().slice(0, 10)
   const liftWeek = [...new Set(weights.filter(d => d.date >= weekStr).map(d => d.date))].length
@@ -110,7 +110,7 @@ export function HomeTab({ setTab }: HomeTabProps) {
   const latestBw = [...bodyweight].sort((a, b) => b.date.localeCompare(a.date))[0]
 
   const skillWeekMap: Record<string, number> = {}
-  skills.forEach(s => { if (weekKey(s.date) === thisWeek) skillWeekMap[s.skill] = (skillWeekMap[s.skill] || 0) + 1 })
+  skills.forEach(s => { if (weekKey(s.date, weekStartDay) === thisWeek) skillWeekMap[s.skill] = (skillWeekMap[s.skill] || 0) + 1 })
 
   const lastFull = [...donations].filter(d => d.type === 'Full Blood').sort((a, b) => b.date.localeCompare(a.date))[0]
   const nextDonDate = lastFull

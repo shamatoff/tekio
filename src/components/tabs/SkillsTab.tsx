@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar } from 'recharts'
 import { useAppStore } from '../../store/app'
+import { usePrefs } from '../../store/prefs'
 import { today, weekKey } from '../../lib/utils'
 import { Card, SecTitle } from '../ui/Card'
 import { Inp } from '../ui/Input'
@@ -40,6 +41,7 @@ export function SkillsTab() {
   const [statsCompetitor, setStatsCompetitor] = useState('')
   const [statsTimeFrame, setStatsTimeFrame] = useState<TimeFrame>('All time')
   const { skills, skillTypes, addSkillEntry, removeSkillEntry, openEditModal, setToast } = useAppStore()
+  const { weekStartDay } = usePrefs()
 
   const allSkills = [...new Set(skills.map(d => d.skill))].sort()
   const allCompetitors = [...new Set(skills.flatMap(d => d.competitorNames ?? []))].sort()
@@ -86,12 +88,12 @@ export function SkillsTab() {
   const chartSkill = selSkill || allSkills[0] || ''
   const weekMap: Record<string, number> = {}
   skills.filter(d => d.skill === chartSkill).forEach(d => {
-    const wk = weekKey(d.date)
+    const wk = weekKey(d.date, weekStartDay)
     weekMap[wk] = (weekMap[wk] || 0) + 1
   })
   const chartData = Object.entries(weekMap)
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([week, sessions]) => ({ week, sessions }))
+    .map(([week, sessions]) => ({ week: week.slice(5), sessions }))
 
   const chartSkillType = skillTypes.find(t => t.name.toLowerCase() === chartSkill.toLowerCase())
   const chartHasCompetitor = chartSkillType?.hasCompetitor ?? false
