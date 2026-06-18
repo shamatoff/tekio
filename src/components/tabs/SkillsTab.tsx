@@ -274,9 +274,16 @@ export function SkillsTab() {
           emptyMessage="No sessions yet"
           renderItem={d => (
             <div key={d.id} className="pb-2 mb-2 border-b border-bg last:border-0 last:mb-0">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-sm font-semibold text-primary">{d.skill}</span>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-semibold text-primary truncate">{d.skill}</span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-xs text-muted">{d.date}</span>
+                  <EditBtn onClick={() => openEditModal({ type: 'skill', record: d })} />
+                  <DelBtn onClick={() => removeSkillEntry(d.id)} />
+                </div>
+              </div>
+              {(d.withTrainer || d.quality > 0 || d.result) && (
+                <div className="flex flex-wrap items-center gap-1.5 mt-1">
                   {d.withTrainer && (
                     <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded-full">
                       with trainer
@@ -291,12 +298,7 @@ export function SkillsTab() {
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-muted">{d.date}</span>
-                  <EditBtn onClick={() => openEditModal({ type: 'skill', record: d })} />
-                  <DelBtn onClick={() => removeSkillEntry(d.id)} />
-                </div>
-              </div>
+              )}
               {d.competitorNames && d.competitorNames.length > 0 && <p className="text-xs text-muted mt-1">vs {d.competitorNames.join(', ')}</p>}
               {d.teammateNames && d.teammateNames.length > 0 && (
                 <p className="text-xs text-muted mt-1">with {d.teammateNames.join(', ')}</p>
