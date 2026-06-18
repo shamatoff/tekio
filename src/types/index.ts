@@ -43,7 +43,7 @@ export interface MobilityEntry {
 
 export type SkillType = 'Tennis' | 'Swimming' | 'Volleyball'
 export type QualityRating = 1 | 2 | 3 | 4 | 5
-export type MatchResult = 'win' | 'loss'
+export type MatchResult = 'win' | 'loss' | 'tie'
 
 export interface SkillEntry {
   id: string
@@ -52,7 +52,7 @@ export interface SkillEntry {
   withTrainer: boolean
   quality: QualityRating
   notes: string
-  competitorName?: string
+  competitorNames?: string[]
   result?: MatchResult
   teammateNames?: string[]
 }

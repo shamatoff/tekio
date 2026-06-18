@@ -39,7 +39,7 @@ export async function loadSkillTypes(): Promise<SkillTypeInfo[]> {
 export async function loadSkills(): Promise<SkillEntry[]> {
   const { data, error } = await supabase
     .from('skill_sessions')
-    .select('id, session_date, with_trainer, quality, notes, competitor_name, result, teammate_names, skill_types(name)')
+    .select('id, session_date, with_trainer, quality, notes, competitor_names, result, teammate_names, skill_types(name)')
     .eq('user_id', USER_ID)
     .order('session_date', { ascending: false })
   if (error) throw error
@@ -50,7 +50,7 @@ export async function loadSkills(): Promise<SkillEntry[]> {
     withTrainer: r.with_trainer,
     quality: (r.quality ?? 0) as QualityRating,
     notes: r.notes ?? '',
-    competitorName: r.competitor_name ?? undefined,
+    competitorNames: r.competitor_names ?? undefined,
     result: (r.result ?? undefined) as MatchResult | undefined,
     teammateNames: r.teammate_names ?? undefined,
   }))
@@ -70,11 +70,11 @@ export async function saveSkillEntry(
       with_trainer: entry.withTrainer,
       quality: entry.quality || null,
       notes: entry.notes || null,
-      competitor_name: entry.competitorName || null,
+      competitor_names: entry.competitorNames?.length ? entry.competitorNames : null,
       result: entry.result || null,
       teammate_names: entry.teammateNames?.length ? entry.teammateNames : null,
     })
-    .select('id, session_date, with_trainer, quality, notes, competitor_name, result, teammate_names')
+    .select('id, session_date, with_trainer, quality, notes, competitor_names, result, teammate_names')
     .single()
   if (error) throw error
   return {
@@ -84,7 +84,7 @@ export async function saveSkillEntry(
     withTrainer: data.with_trainer,
     quality: (data.quality ?? 0) as QualityRating,
     notes: data.notes ?? '',
-    competitorName: data.competitor_name ?? undefined,
+    competitorNames: data.competitor_names ?? undefined,
     result: (data.result ?? undefined) as MatchResult | undefined,
     teammateNames: data.teammate_names ?? undefined,
   }
@@ -109,7 +109,7 @@ export async function updateSkillEntry(
       with_trainer: patch.withTrainer,
       quality: patch.quality || null,
       notes: patch.notes || null,
-      competitor_name: patch.competitorName || null,
+      competitor_names: patch.competitorNames?.length ? patch.competitorNames : null,
       result: patch.result || null,
       teammate_names: patch.teammateNames?.length ? patch.teammateNames : null,
     })
