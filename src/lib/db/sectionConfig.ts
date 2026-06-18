@@ -15,6 +15,7 @@ const DEFAULTS: SectionConfig[] = [
   { sectionKey: 'Mobility',    showInMenu: true, showInHome: true, sortOrder: 3 },
   { sectionKey: 'Skills',      showInMenu: true, showInHome: true, sortOrder: 4 },
   { sectionKey: 'Donations',   showInMenu: true, showInHome: true, sortOrder: 5 },
+  { sectionKey: 'Water',       showInMenu: true, showInHome: true, sortOrder: 6 },
 ]
 
 export async function loadSectionConfig(): Promise<SectionConfig[]> {

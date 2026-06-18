@@ -69,8 +69,10 @@ function ProgramHeroCard({ ap, setTab }: { ap: ActiveProgram; setTab: (t: string
   )
 }
 
+const WATER_PILLS = [100, 200, 300, 400, 500]
+
 export function HomeTab({ setTab }: HomeTabProps) {
-  const { weights, bodyweight, cardio, mobility, skills, donations, programs } = useAppStore()
+  const { weights, bodyweight, cardio, mobility, skills, donations, water, addWaterEntry, setToast, programs } = useAppStore()
   const { sections, weekStartDay } = usePrefs()
 
   const homeOn = (key: string) => {
@@ -111,6 +113,12 @@ export function HomeTab({ setTab }: HomeTabProps) {
 
   const skillWeekMap: Record<string, number> = {}
   skills.forEach(s => { if (weekKey(s.date, weekStartDay) === thisWeek) skillWeekMap[s.skill] = (skillWeekMap[s.skill] || 0) + 1 })
+
+  const todayWaterMl = water.filter(w => w.date === today()).reduce((s, w) => s + w.amountMl, 0)
+  const addWater = (ml: number) => {
+    addWaterEntry({ date: today(), amountMl: ml })
+    setToast(`✅ +${ml} ml water`)
+  }
 
   const lastFull = [...donations].filter(d => d.type === 'Full Blood').sort((a, b) => b.date.localeCompare(a.date))[0]
   const nextDonDate = lastFull
@@ -244,6 +252,30 @@ export function HomeTab({ setTab }: HomeTabProps) {
             <Card key="Cardio">
               <SecTitle>Cardio</SecTitle>
               <MiniChart data={cardioChart} color="#10b981" />
+            </Card>
+          ),
+        },
+        {
+          key: 'Water',
+          order: sectionOrder['Water'] ?? 6,
+          show: homeOn('Water'),
+          node: (
+            <Card key="Water">
+              <SecTitle>Water</SecTitle>
+              <p className="text-xl font-bold text-primary mb-2">
+                {todayWaterMl} <span className="text-sm text-muted font-normal">ml today</span>
+              </p>
+              <div className="flex gap-1.5">
+                {WATER_PILLS.map(ml => (
+                  <button
+                    key={ml}
+                    onClick={() => addWater(ml)}
+                    className="flex-1 py-2 rounded-lg text-xs font-semibold border border-border bg-bg text-primary hover:bg-accent-l hover:text-accent hover:border-accent transition-colors"
+                  >
+                    +{ml}
+                  </button>
+                ))}
+              </div>
             </Card>
           ),
         },

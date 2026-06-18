@@ -8,6 +8,7 @@ import type {
   SkillEntry,
   NewSkillFlags,
   DonationEntry,
+  WaterEntry,
   Program,
   EditModalTarget,
 } from '../types'
@@ -31,6 +32,7 @@ import { loadCardio, saveCardioEntry, deleteCardioEntry, updateCardioEntry } fro
 import { loadMobility, saveMobilityEntry, deleteMobilityEntry, updateMobilityEntry } from '../lib/db/mobility'
 import { loadSkills, loadSkillTypes, saveSkillEntry, deleteSkillEntry, updateSkillEntry } from '../lib/db/skills'
 import { loadDonations, saveDonationEntry, deleteDonationEntry, updateDonationEntry } from '../lib/db/donations'
+import { loadWater, saveWaterEntry, deleteWaterEntry, updateWaterEntry } from '../lib/db/water'
 import { usePrefs } from './prefs'
 import type { LiftSet } from '../types'
 
@@ -50,6 +52,7 @@ interface AppStore extends AppState {
   setSkills: (skills: AppState['skills']) => void
   setSkillTypes: (skillTypes: AppState['skillTypes']) => void
   setDonations: (donations: AppState['donations']) => void
+  setWater: (water: AppState['water']) => void
   setToast: (msg: string) => void
 
   bootstrap: () => Promise<void>
@@ -90,6 +93,11 @@ interface AppStore extends AppState {
   addDonationEntry: (entry: Omit<DonationEntry, 'id'>) => Promise<void>
   removeDonationEntry: (id: string) => Promise<void>
   editDonationEntry: (id: string, patch: Omit<DonationEntry, 'id'>) => Promise<void>
+
+  // Water
+  addWaterEntry: (entry: Omit<WaterEntry, 'id'>) => Promise<void>
+  removeWaterEntry: (id: string) => Promise<void>
+  editWaterEntry: (id: string, patch: Omit<WaterEntry, 'id'>) => Promise<void>
 }
 
 export const useAppStore = create<AppStore>((set) => ({
@@ -100,6 +108,7 @@ export const useAppStore = create<AppStore>((set) => ({
   skills: [],
   skillTypes: [],
   donations: [],
+  water: [],
   programs: [],
   loading: true,
   toast: '',
@@ -117,6 +126,7 @@ export const useAppStore = create<AppStore>((set) => ({
   setSkills: (skills) => set({ skills }),
   setSkillTypes: (skillTypes) => set({ skillTypes }),
   setDonations: (donations) => set({ donations }),
+  setWater: (water) => set({ water }),
   setToast: (toast) => {
     set({ toast })
     if (toast) setTimeout(() => set({ toast: '' }), 3000)
@@ -127,7 +137,7 @@ export const useAppStore = create<AppStore>((set) => ({
     set({ loading: true })
     try {
       await getOrCreateUser()
-      const [weights, activePrograms, bodyweight, cardio, mobility, skills, skillTypes, donations] = await Promise.all([
+      const [weights, activePrograms, bodyweight, cardio, mobility, skills, skillTypes, donations, water] = await Promise.all([
         loadWeights(),
         loadActivePrograms(),
         loadBodyweight(),
@@ -136,6 +146,7 @@ export const useAppStore = create<AppStore>((set) => ({
         loadSkills(),
         loadSkillTypes(),
         loadDonations(),
+        loadWater(),
         usePrefs.getState().loadPrefs(),
       ])
       set({
@@ -146,6 +157,7 @@ export const useAppStore = create<AppStore>((set) => ({
         skills,
         skillTypes,
         donations,
+        water,
         programs: activePrograms,
       })
     } finally {
@@ -296,5 +308,19 @@ export const useAppStore = create<AppStore>((set) => ({
   editDonationEntry: async (id, patch) => {
     await updateDonationEntry(id, patch)
     set(s => ({ donations: s.donations.map(d => (d.id === id ? { ...d, ...patch } : d)) }))
+  },
+
+  // ── Water ────────────────────────────────────────────────────────────────────
+  addWaterEntry: async (entry) => {
+    const saved = await saveWaterEntry(entry)
+    set(s => ({ water: [saved, ...s.water] }))
+  },
+  removeWaterEntry: async (id) => {
+    await deleteWaterEntry(id)
+    set(s => ({ water: s.water.filter(w => w.id !== id) }))
+  },
+  editWaterEntry: async (id, patch) => {
+    await updateWaterEntry(id, patch)
+    set(s => ({ water: s.water.map(w => (w.id === id ? { ...w, ...patch } : w)) }))
   },
 }))

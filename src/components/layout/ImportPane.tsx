@@ -7,7 +7,8 @@ import { saveCardioEntry } from '../../lib/db/cardio'
 import { saveMobilityEntry } from '../../lib/db/mobility'
 import { saveSkillEntry } from '../../lib/db/skills'
 import { saveDonationEntry } from '../../lib/db/donations'
-import type { WeightEntry, BodyweightEntry, CardioEntry, MobilityEntry, SkillEntry, DonationEntry, Program } from '../../types'
+import { saveWaterEntry } from '../../lib/db/water'
+import type { WeightEntry, BodyweightEntry, CardioEntry, MobilityEntry, SkillEntry, DonationEntry, WaterEntry, Program } from '../../types'
 import { Btn } from '../ui/Button'
 
 interface ImportPaneProps {
@@ -51,6 +52,7 @@ export function ImportPane({ onClose }: ImportPaneProps) {
       const existingMDates = new Set(store.mobility.map(m => m.date))
       const existingSkKeys = new Set(store.skills.map(s => `${s.date}:${s.skill}`))
       const existingDKeys = new Set(store.donations.map(d => `${d.date}:${d.type}`))
+      const existingWaterKeys = new Set(store.water.map(w => `${w.date}:${w.amountMl}`))
 
       const newInWeights = inWeights.filter(w => !existingWKeys.has(`${w.date}:${w.exercise}`))
       const newInBodyweight = ((p.bodyweight as BodyweightEntry[]) || []).filter(b => !existingBDates.has(b.date))
@@ -58,6 +60,7 @@ export function ImportPane({ onClose }: ImportPaneProps) {
       const newInMobility = ((p.mobility as MobilityEntry[]) || []).filter(m => !existingMDates.has(m.date))
       const newInSkills = ((p.skills as SkillEntry[]) || []).filter(s => !existingSkKeys.has(`${s.date}:${s.skill}`))
       const newInDonations = ((p.donations as DonationEntry[]) || []).filter(d => !existingDKeys.has(`${d.date}:${d.type}`))
+      const newInWater = ((p.water as WaterEntry[]) || []).filter(w => !existingWaterKeys.has(`${w.date}:${w.amountMl}`))
 
       const newWeights: WeightEntry[] = mergeById(store.weights, newInWeights)
       const newBodyweight: BodyweightEntry[] = mergeById(store.bodyweight, newInBodyweight)
@@ -65,6 +68,7 @@ export function ImportPane({ onClose }: ImportPaneProps) {
       const newMobility: MobilityEntry[] = mergeById(store.mobility, newInMobility)
       const newSkills: SkillEntry[] = mergeById(store.skills, newInSkills)
       const newDonations: DonationEntry[] = mergeById(store.donations, newInDonations)
+      const newWater: WaterEntry[] = mergeById(store.water, newInWater)
 
       // Weights: process date-by-date to avoid concurrent session creation race condition
       const byDate = new Map<string, WeightEntry[]>()
@@ -84,6 +88,7 @@ export function ImportPane({ onClose }: ImportPaneProps) {
         ...newInMobility.map(m => saveMobilityEntry(m)),
         ...newInSkills.map(s => saveSkillEntry(s)),
         ...newInDonations.map(d => saveDonationEntry(d)),
+        ...newInWater.map(w => saveWaterEntry(w)),
       ])
 
       store.setWeights(newWeights)
@@ -92,6 +97,7 @@ export function ImportPane({ onClose }: ImportPaneProps) {
       store.setMobility(newMobility)
       store.setSkills(newSkills)
       store.setDonations(newDonations)
+      store.setWater(newWater)
 
       if (p.program && store.programs.length === 0) {
         await store.saveActiveProgram(p.program as Program)

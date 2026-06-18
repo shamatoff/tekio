@@ -68,6 +68,12 @@ export interface NewSkillFlags {
   hasTeammate: boolean
 }
 
+export interface WaterEntry {
+  id: string
+  date: string
+  amountMl: number
+}
+
 export type DonationType = 'Full Blood' | 'Plasma'
 
 export interface DonationEntry {
@@ -104,6 +110,7 @@ export interface AppState {
   skills: SkillEntry[]
   skillTypes: SkillTypeInfo[]
   donations: DonationEntry[]
+  water: WaterEntry[]
   programs: ActiveProgram[]
 }
 
@@ -115,3 +122,4 @@ export type EditModalTarget =
   | { type: 'mobility'; record: MobilityEntry }
   | { type: 'skill'; record: SkillEntry }
   | { type: 'donation'; record: DonationEntry }
+  | { type: 'water'; record: WaterEntry }
