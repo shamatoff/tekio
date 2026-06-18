@@ -7,7 +7,7 @@ import type { SetStr } from './SetsGrid'
 import { Inp, SelEl } from './Input'
 import { Btn, DelBtn } from './Button'
 import { SmartInput } from './SmartInput'
-import { TeammateInput } from './TeammateInput'
+import { ChipListInput } from './ChipListInput'
 import { CARDIO_TYPES, DONATION_TYPES } from '../../constants/app'
 import type {
   WeightEntry,
@@ -349,7 +349,7 @@ function SkillForm({ record, onClose, saveRef }: { record: SkillEntry; onClose: 
   const skillTypes = useAppStore(s => s.skillTypes)
   const allSkills = useMemo(() => [...new Set(skills.map(d => d.skill))].sort(), [skills])
   const allCompetitors = useMemo(
-    () => [...new Set(skills.map(d => d.competitorName).filter((c): c is string => !!c))].sort(),
+    () => [...new Set(skills.flatMap(d => d.competitorNames ?? []))].sort(),
     [skills]
   )
   const allTeammates = useMemo(
@@ -361,7 +361,7 @@ function SkillForm({ record, onClose, saveRef }: { record: SkillEntry; onClose: 
   const [withTrainer, setWithTrainer] = useState(record.withTrainer)
   const [quality, setQuality] = useState<number>(record.quality)
   const [notes, setNotes] = useState(record.notes)
-  const [competitorName, setCompetitorName] = useState(record.competitorName ?? '')
+  const [competitorNames, setCompetitorNames] = useState<string[]>(record.competitorNames ?? [])
   const [result, setResult] = useState<MatchResult | ''>(record.result ?? '')
   const [teammates, setTeammates] = useState<string[]>(record.teammateNames ?? [])
   const [newSkillHasCompetitor, setNewSkillHasCompetitor] = useState(false)
@@ -384,7 +384,7 @@ function SkillForm({ record, onClose, saveRef }: { record: SkillEntry; onClose: 
         withTrainer,
         quality: quality as QualityRating,
         notes,
-        competitorName: hasCompetitor ? (competitorName.trim() || undefined) : undefined,
+        competitorNames: hasCompetitor ? (competitorNames.length ? competitorNames : undefined) : undefined,
         result: hasCompetitor ? (result || undefined) : undefined,
         teammateNames: hasTeammate ? teammates : undefined,
       }, newSkillFlags)
@@ -463,18 +463,18 @@ function SkillForm({ record, onClose, saveRef }: { record: SkillEntry; onClose: 
       {hasCompetitor && (
         <>
           <div>
-            <p className="text-xs text-muted font-medium mb-1">Competitor (opt.)</p>
-            <SmartInput
-              value={competitorName}
-              onChange={setCompetitorName}
+            <p className="text-xs text-muted font-medium mb-1">Competitor(s) (opt.)</p>
+            <ChipListInput
+              items={competitorNames}
+              onChange={setCompetitorNames}
               suggestions={allCompetitors}
-              placeholder="e.g. John Smith"
+              placeholder="Add competitor"
             />
           </div>
           <div>
             <p className="text-xs text-muted font-medium mb-1">Result</p>
             <div className="flex gap-1.5">
-              {(['win', 'loss'] as MatchResult[]).map(r => (
+              {(['win', 'loss', 'tie'] as MatchResult[]).map(r => (
                 <button
                   key={r}
                   onClick={() => setResult(rv => (rv === r ? '' : r))}
@@ -495,7 +495,7 @@ function SkillForm({ record, onClose, saveRef }: { record: SkillEntry; onClose: 
       {hasTeammate && (
         <div>
           <p className="text-xs text-muted font-medium mb-1">Teammate(s) (opt.)</p>
-          <TeammateInput teammates={teammates} onChange={setTeammates} suggestions={allTeammates} />
+          <ChipListInput items={teammates} onChange={setTeammates} suggestions={allTeammates} placeholder="Add teammate" />
         </div>
       )}
 

@@ -1,19 +1,20 @@
 import { useState } from 'react'
 import { SmartInput } from './SmartInput'
 
-interface TeammateInputProps {
-  teammates: string[]
-  onChange: (teammates: string[]) => void
+interface ChipListInputProps {
+  items: string[]
+  onChange: (items: string[]) => void
   suggestions: string[]
+  placeholder: string
 }
 
-export function TeammateInput({ teammates, onChange, suggestions }: TeammateInputProps) {
+export function ChipListInput({ items, onChange, suggestions, placeholder }: ChipListInputProps) {
   const [input, setInput] = useState('')
 
   const add = (name: string) => {
     const trimmed = name.trim()
-    if (!trimmed || teammates.includes(trimmed)) return
-    onChange([...teammates, trimmed])
+    if (!trimmed || items.includes(trimmed)) return
+    onChange([...items, trimmed])
     setInput('')
   }
 
@@ -24,8 +25,8 @@ export function TeammateInput({ teammates, onChange, suggestions }: TeammateInpu
           value={input}
           onChange={setInput}
           onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(input) } }}
-          suggestions={suggestions.filter(s => !teammates.includes(s))}
-          placeholder="Add teammate"
+          suggestions={suggestions.filter(s => !items.includes(s))}
+          placeholder={placeholder}
           className="flex-1"
         />
         <button
@@ -36,9 +37,9 @@ export function TeammateInput({ teammates, onChange, suggestions }: TeammateInpu
           Add
         </button>
       </div>
-      {teammates.length > 0 && (
+      {items.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {teammates.map(t => (
+          {items.map(t => (
             <span
               key={t}
               className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-accent-l text-accent"
@@ -46,7 +47,7 @@ export function TeammateInput({ teammates, onChange, suggestions }: TeammateInpu
               {t}
               <button
                 type="button"
-                onClick={() => onChange(teammates.filter(x => x !== t))}
+                onClick={() => onChange(items.filter(x => x !== t))}
                 className="text-accent/70 hover:text-accent"
               >
                 ✕
