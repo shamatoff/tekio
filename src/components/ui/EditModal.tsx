@@ -16,6 +16,7 @@ import type {
   MobilityEntry,
   SkillEntry,
   DonationEntry,
+  WaterEntry,
   LiftSet,
   MobilityExercise,
   QualityRating,
@@ -550,6 +551,44 @@ function DonationForm({ record, onClose, saveRef }: { record: DonationEntry; onC
   )
 }
 
+// ── WaterForm ─────────────────────────────────────────────────────────────────
+
+function WaterForm({ record, onClose, saveRef }: { record: WaterEntry; onClose: () => void; saveRef: { current: () => void } }) {
+  const editWaterEntry = useAppStore(s => s.editWaterEntry)
+  const setToast = useAppStore(s => s.setToast)
+  const [date, setDate] = useState(record.date)
+  const [amount, setAmount] = useState(String(record.amountMl))
+
+  const save = async () => {
+    if (!amount) return
+    try {
+      await editWaterEntry(record.id, { date, amountMl: +amount })
+      setToast('✅ Updated!')
+      onClose()
+    } catch {
+      setToast('❌ Failed to update.')
+    }
+  }
+  saveRef.current = save
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-2 gap-2.5">
+        <Inp label="Date" type="date" value={date} onChange={e => setDate(e.target.value)} />
+        <Inp
+          label="Amount (ml)"
+          type="number"
+          value={amount}
+          onChange={e => setAmount(e.target.value)}
+          step="10"
+          min="0"
+          placeholder="250"
+        />
+      </div>
+    </div>
+  )
+}
+
 // ── Main EditModal ────────────────────────────────────────────────────────────
 
 const TITLES: Record<string, string> = {
@@ -560,6 +599,7 @@ const TITLES: Record<string, string> = {
   mobility: 'Edit Mobility Session',
   skill: 'Edit Skill Session',
   donation: 'Edit Donation',
+  water: 'Edit Water Entry',
 }
 
 /**
@@ -599,6 +639,9 @@ export function EditModal() {
       )}
       {editModal?.type === 'donation' && (
         <DonationForm record={editModal.record} onClose={closeEditModal} saveRef={saveRef} />
+      )}
+      {editModal?.type === 'water' && (
+        <WaterForm record={editModal.record} onClose={closeEditModal} saveRef={saveRef} />
       )}
     </Modal>
   )
