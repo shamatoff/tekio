@@ -12,12 +12,20 @@ export const uid = (): string =>
 export const today = (): string =>
   new Date().toISOString().slice(0, 10)
 
-export const weekKey = (s: string): string => {
+export type WeekStartDay = 'sunday' | 'monday'
+
+/** Returns the date (YYYY-MM-DD) of the start of the week containing `s`. */
+export const startOfWeek = (s: string, weekStart: WeekStartDay = 'monday'): string => {
   const d = new Date(s)
-  const j = new Date(d.getFullYear(), 0, 4)
-  const w = Math.ceil(((d.getTime() - j.getTime()) / 86400000 + j.getDay() + 1) / 7)
-  return `${d.getFullYear()}-W${String(w).padStart(2, '0')}`
+  const day = d.getDay() // 0 = Sunday … 6 = Saturday
+  const offset = weekStart === 'monday' ? (day + 6) % 7 : day
+  d.setDate(d.getDate() - offset)
+  return d.toISOString().slice(0, 10)
 }
+
+/** Groups a date into its containing week, keyed by that week's start date. */
+export const weekKey = (s: string, weekStart: WeekStartDay = 'monday'): string =>
+  startOfWeek(s, weekStart)
 
 export const r05 = (v: number): number => Math.round(v * 2) / 2
 

@@ -118,7 +118,7 @@ function SortableRow({ section }: { section: SectionConfig }) {
 // ─── ProfileTab ──────────────────────────────────────────────────────────────
 
 export function ProfileTab() {
-  const { sections, reorderSections } = usePrefs()
+  const { sections, reorderSections, weekStartDay, setWeekStartDay } = usePrefs()
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -138,6 +138,26 @@ export function ProfileTab() {
 
   return (
     <div className="flex flex-col gap-4">
+      <div>
+        <SecTitle>Preferences</SecTitle>
+        <div className="bg-surface border border-border rounded-xl p-3">
+          <p className="text-xs text-muted font-medium mb-1.5">Week starts on</p>
+          <div className="flex gap-1.5">
+            {(['monday', 'sunday'] as const).map(v => (
+              <button
+                key={v}
+                onClick={() => setWeekStartDay(v)}
+                className={`flex-1 py-2 rounded-lg text-xs font-semibold border transition-colors capitalize ${
+                  weekStartDay === v ? 'border-accent bg-accent-l text-accent' : 'border-border bg-surface text-muted'
+                }`}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       <div>
         <SecTitle>Sections</SecTitle>
         <p className="text-xs text-muted mb-3">
