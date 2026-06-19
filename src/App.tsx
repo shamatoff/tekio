@@ -12,6 +12,7 @@ import { DonationsTab } from './components/tabs/DonationsTab'
 import { WaterTab } from './components/tabs/WaterTab'
 import { ProgramTab } from './components/tabs/ProgramTab'
 import { ProfileTab } from './components/tabs/ProfileTab'
+import { HomeSkeleton } from './components/tabs/HomeSkeleton'
 
 const DRAWER_TABS = ['Weights', 'Body Weight', 'Cardio', 'Mobility', 'Skills', 'Donations', 'Water'] as const
 type DrawerTab = typeof DRAWER_TABS[number]
@@ -38,22 +39,15 @@ export default function App() {
 
   useEffect(() => { bootstrap() }, [])
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-bg flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-accent/30 border-t-accent rounded-full animate-spin" />
-          <p className="text-sm text-muted">Loading…</p>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <AppShell tab={tab} setTab={(t) => setTab(t as Tab)}>
-      <Routes>
-        <Route path="*" element={<TabContent tab={tab} setTab={(t) => setTab(t as Tab)} />} />
-      </Routes>
+      {loading ? (
+        <HomeSkeleton />
+      ) : (
+        <Routes>
+          <Route path="*" element={<TabContent tab={tab} setTab={(t) => setTab(t as Tab)} />} />
+        </Routes>
+      )}
     </AppShell>
   )
 }
