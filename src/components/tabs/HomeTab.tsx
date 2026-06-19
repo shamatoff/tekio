@@ -261,8 +261,9 @@ export function HomeTab({ setTab }: HomeTabProps) {
           show: homeOn('Water'),
           node: (
             <Card key="Water">
-              <SecTitle>Water</SecTitle>
-              <p className="text-xl font-bold text-primary mb-2">
+              <SecTitle>💧 Water</SecTitle>
+              <p className="text-xl font-bold text-primary mb-2 flex items-center gap-1.5">
+                <span className="text-lg">🥤</span>
                 {todayWaterMl} <span className="text-sm text-muted font-normal">ml today</span>
               </p>
               <div className="flex gap-1.5">
@@ -270,8 +271,9 @@ export function HomeTab({ setTab }: HomeTabProps) {
                   <button
                     key={ml}
                     onClick={() => addWater(ml)}
-                    className="flex-1 py-2 rounded-lg text-xs font-semibold border border-border bg-bg text-primary hover:bg-accent-l hover:text-accent hover:border-accent transition-colors"
+                    className="flex-1 py-2 rounded-lg text-xs font-semibold border border-border bg-bg text-primary hover:bg-accent-l hover:text-accent hover:border-accent transition-colors flex flex-col items-center gap-0.5"
                   >
+                    <span className="text-sm leading-none">💧</span>
                     +{ml}
                   </button>
                 ))}
