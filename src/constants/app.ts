@@ -2,6 +2,8 @@ export const USER_ID = 'a0000000-0000-0000-0000-000000000001'
 
 export const CYCLE = 6
 
+export const WATER_GOAL_ML = 2500
+
 export const CARDIO_TYPES = ['Running', 'Cycling', 'Swimming', 'Indoor Rowing'] as const
 export type CardioDisplayType = typeof CARDIO_TYPES[number]
 

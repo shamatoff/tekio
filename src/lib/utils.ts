@@ -143,6 +143,20 @@ export function calcPace(mins: number, distKm: number): string {
   return `${m}:${String(s).padStart(2, '0')}/km`
 }
 
+/** Counts consecutive days of activity ending today (or yesterday, if today has none yet). */
+export function currentStreak(activeDates: Set<string>): number {
+  const d = new Date(today())
+  if (!activeDates.has(d.toISOString().slice(0, 10))) {
+    d.setDate(d.getDate() - 1)
+  }
+  let streak = 0
+  while (activeDates.has(d.toISOString().slice(0, 10))) {
+    streak++
+    d.setDate(d.getDate() - 1)
+  }
+  return streak
+}
+
 export function isTodayDone(
   weights: WeightEntry[],
   day: ProgramDay | null | undefined,

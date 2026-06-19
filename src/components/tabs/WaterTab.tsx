@@ -6,6 +6,7 @@ import { Card, SecTitle } from '../ui/Card'
 import { Inp } from '../ui/Input'
 import { Btn, DelBtn, EditBtn } from '../ui/Button'
 import { HistoryList } from '../ui/HistoryList'
+import { useCountUp } from '../../hooks/useCountUp'
 
 export function WaterTab() {
   const [date, setDate] = useState(today())
@@ -25,6 +26,7 @@ export function WaterTab() {
 
   const sorted = [...water].sort((a, b) => b.date.localeCompare(a.date))
   const todayTotal = water.filter(w => w.date === today()).reduce((s, w) => s + w.amountMl, 0)
+  const todayTotalDisplay = Math.round(useCountUp(todayTotal))
 
   const dailyTotals = new Map<string, number>()
   water.forEach(w => dailyTotals.set(w.date, (dailyTotals.get(w.date) ?? 0) + w.amountMl))
@@ -45,7 +47,7 @@ export function WaterTab() {
 
       <Card>
         <p className="text-[11px] text-muted font-semibold uppercase mb-1">Today</p>
-        <p className="text-2xl font-bold text-primary">{todayTotal}<span className="text-sm text-muted font-normal"> ml</span></p>
+        <p className="text-2xl font-bold text-primary">{todayTotalDisplay}<span className="text-sm text-muted font-normal"> ml</span></p>
       </Card>
 
       {chartData.length > 1 && (
