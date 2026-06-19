@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { useAppStore } from '../../store/app'
 import { usePrefs } from '../../store/prefs'
 import { cycleInfo, getGrouped, weekKey, today } from '../../lib/utils'
 import { CYCLE } from '../../constants/app'
 import { Card, SecTitle } from '../ui/Card'
+import { Chip } from '../ui/Chip'
 import { MiniChart } from '../ui/MiniChart'
 import type { ActiveProgram } from '../../types'
 
@@ -92,11 +94,20 @@ export function HomeTab({ setTab }: HomeTabProps) {
 
   const exMap: Record<string, number> = {}
   weights.forEach(e => { exMap[e.exercise] = (exMap[e.exercise] || 0) + 1 })
-  const topEx = Object.entries(exMap).sort((a, b) => b[1] - a[1])[0]?.[0]
-  const liftChart = weights
-    .filter(d => d.exercise === topEx)
+  const topExercises = Object.entries(exMap).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([ex]) => ex)
+  const topEx = topExercises[0]
+  const [selectedExercise, setSelectedExercise] = useState<string | undefined>(undefined)
+  const activeExercise = selectedExercise && topExercises.includes(selectedExercise) ? selectedExercise : topEx
+
+  const activeExerciseEntries = weights
+    .filter(d => d.exercise === activeExercise)
     .sort((a, b) => a.date.localeCompare(b.date))
-    .map(d => ({ x: d.date.slice(5), y: Math.max(...d.sets.map(s => s.weight)) }))
+  const liftMaxes = activeExerciseEntries.map(d => Math.max(...d.sets.map(s => s.weight)))
+  const liftChart = activeExerciseEntries.map((d, i) => ({ x: d.date.slice(5), y: liftMaxes[i] }))
+  const latestLiftMax = liftMaxes[liftMaxes.length - 1]
+  const prevLiftMax = liftMaxes[liftMaxes.length - 2]
+  const liftDiff = latestLiftMax != null && prevLiftMax != null ? +(latestLiftMax - prevLiftMax).toFixed(1) : null
+  const isLiftPR = latestLiftMax != null && liftMaxes.length > 0 && latestLiftMax >= Math.max(...liftMaxes)
 
   const cardioChart = [...cardio]
     .sort((a, b) => a.date.localeCompare(b.date))
@@ -219,7 +230,7 @@ export function HomeTab({ setTab }: HomeTabProps) {
           node: (
             <Card key="Body Weight">
               <div className="flex items-center justify-between mb-2">
-                <SecTitle className="mb-0">Body Weight</SecTitle>
+                <SecTitle className="mb-0">⚖️ Body Weight</SecTitle>
                 {bwDiff != null && (
                   <span className={`text-xs font-bold ${bwDiff === 0 ? 'text-muted' : bwDiff > 0 ? 'text-danger' : 'text-success'}`}>
                     {bwDiff > 0 ? `+${bwDiff}` : bwDiff} kg
@@ -245,9 +256,38 @@ export function HomeTab({ setTab }: HomeTabProps) {
           show: homeOn('Weights'),
           node: (
             <Card key="Weights">
-              <SecTitle>{topEx ? `Lifting — ${topEx}` : 'Lifting'}</SecTitle>
-              {liftChart.length >= 2 ? (
-                <MiniChart data={liftChart} color="#1e293b" />
+              <div className="flex items-center justify-between mb-2">
+                <SecTitle className="mb-0">🏋️ Lifting</SecTitle>
+                {liftDiff != null && (
+                  <span className={`text-xs font-bold ${liftDiff === 0 ? 'text-muted' : liftDiff > 0 ? 'text-success' : 'text-danger'}`}>
+                    {liftDiff > 0 ? `+${liftDiff}` : liftDiff} kg
+                  </span>
+                )}
+              </div>
+              {topExercises.length > 1 && (
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {topExercises.map(ex => (
+                    <Chip key={ex} small active={ex === activeExercise} onClick={() => setSelectedExercise(ex)}>
+                      {ex}
+                    </Chip>
+                  ))}
+                </div>
+              )}
+              {activeExercise ? (
+                <>
+                  {topExercises.length <= 1 && (
+                    <p className="text-[11px] text-muted font-medium mb-0.5">{activeExercise}</p>
+                  )}
+                  <p className="text-xl font-bold text-primary mb-2 flex items-center gap-1.5">
+                    {latestLiftMax ?? '–'} <span className="text-sm text-muted font-normal">kg</span>
+                    {isLiftPR && liftMaxes.length > 1 && <span className="text-xs font-bold text-accent">🏆 PR</span>}
+                  </p>
+                  {liftChart.length >= 2 ? (
+                    <MiniChart data={liftChart} color="#1e293b" />
+                  ) : (
+                    <button onClick={() => setTab('Weights')} className="text-sm text-accent">+ Log another session</button>
+                  )}
+                </>
               ) : (
                 <button onClick={() => setTab('Weights')} className="text-sm text-accent">+ Log first session</button>
               )}
