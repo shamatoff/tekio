@@ -1,4 +1,4 @@
-import { ResponsiveContainer, LineChart, Line, Tooltip } from 'recharts'
+import { ResponsiveContainer, LineChart, Line, YAxis, Tooltip } from 'recharts'
 
 interface MiniChartProps {
   data: { x: string; y: number }[]
@@ -10,6 +10,7 @@ export function MiniChart({ data, color = '#6366f1' }: MiniChartProps) {
   return (
     <ResponsiveContainer width="100%" height={60}>
       <LineChart data={data} margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
+        <YAxis hide domain={['auto', 'auto']} />
         <Tooltip
           contentStyle={{ fontSize: 11, padding: '2px 6px', borderRadius: 6 }}
           formatter={(v: number) => [v, '']}

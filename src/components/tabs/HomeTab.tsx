@@ -109,7 +109,10 @@ export function HomeTab({ setTab }: HomeTabProps) {
   const liftWeek = [...new Set(weights.filter(d => d.date >= weekStr).map(d => d.date))].length
   const cardioWeek = cardio.filter(d => d.date >= weekStr).length
   const mobWeek = mobility.filter(d => d.date >= weekStr).length
-  const latestBw = [...bodyweight].sort((a, b) => b.date.localeCompare(a.date))[0]
+  const sortedBw = [...bodyweight].sort((a, b) => b.date.localeCompare(a.date))
+  const latestBw = sortedBw[0]
+  const prevBw = sortedBw[1]
+  const bwDiff = latestBw && prevBw ? +(latestBw.weight - prevBw.weight).toFixed(1) : null
 
   const skillWeekMap: Record<string, number> = {}
   skills.forEach(s => { if (weekKey(s.date, weekStartDay) === thisWeek) skillWeekMap[s.skill] = (skillWeekMap[s.skill] || 0) + 1 })
@@ -215,7 +218,14 @@ export function HomeTab({ setTab }: HomeTabProps) {
           show: homeOn('Body Weight'),
           node: (
             <Card key="Body Weight">
-              <SecTitle>Body Weight</SecTitle>
+              <div className="flex items-center justify-between mb-2">
+                <SecTitle className="mb-0">Body Weight</SecTitle>
+                {bwDiff != null && (
+                  <span className={`text-xs font-bold ${bwDiff === 0 ? 'text-muted' : bwDiff > 0 ? 'text-danger' : 'text-success'}`}>
+                    {bwDiff > 0 ? `+${bwDiff}` : bwDiff} kg
+                  </span>
+                )}
+              </div>
               {latestBw && (
                 <p className="text-xl font-bold text-primary mb-2">
                   {latestBw.weight} <span className="text-sm text-muted font-normal">kg</span>
