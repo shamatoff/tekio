@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { cycleInfo, isDeloadDate, isTodayDone, mergeById } from '../lib/utils'
+import { cycleInfo, isDeloadDate, isTodayDone, mergeById, cycleExerciseProgress } from '../lib/utils'
 import type { WeightEntry, Program, ProgramDay } from '../types'
 
 // ---------------------------------------------------------------------------
@@ -166,6 +166,69 @@ describe('isTodayDone', () => {
     const day = makeDay(['Squat'])
     const entries = [makeEntry('1', '2025-05-31', 'Squat')] // yesterday
     expect(isTodayDone(entries, day)).toBe(false)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// cycleExerciseProgress
+// ---------------------------------------------------------------------------
+
+describe('cycleExerciseProgress', () => {
+  beforeEach(() => { vi.useFakeTimers() })
+  afterEach(() => { vi.useRealTimers() })
+
+  function makeDay(exercises: string[]): ProgramDay {
+    return { name: 'Test Day', exercises, supersets: [] }
+  }
+
+  it('returns empty array when no exercises in cycle days', () => {
+    const cycle = { startDate: '2025-01-01', endDate: '2025-02-01', days: [] }
+    expect(cycleExerciseProgress([], cycle)).toEqual([])
+  })
+
+  it('skips exercises with no logged data in range', () => {
+    const cycle = { startDate: '2025-01-01', endDate: '2025-02-01', days: [makeDay(['Squat'])] }
+    expect(cycleExerciseProgress([], cycle)).toEqual([])
+  })
+
+  it('computes first/last/delta from logged entries within the date range', () => {
+    const cycle = { startDate: '2025-01-01', endDate: '2025-02-01', days: [makeDay(['Squat'])] }
+    const weights = [
+      makeEntry('1', '2025-01-05', 'Squat'),
+      { id: '2', date: '2025-01-20', exercise: 'Squat', sets: [{ weight: 120, reps: 5 }] },
+    ]
+    const result = cycleExerciseProgress(weights, cycle)
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({ exercise: 'Squat', first: 100, last: 120, delta: 20 })
+    expect(result[0].series).toEqual([{ x: '2025-01-05', y: 100 }, { x: '2025-01-20', y: 120 }])
+  })
+
+  it('excludes entries outside the cycle date range', () => {
+    const cycle = { startDate: '2025-01-10', endDate: '2025-01-20', days: [makeDay(['Squat'])] }
+    const weights = [
+      makeEntry('1', '2025-01-05', 'Squat'), // before range
+      makeEntry('2', '2025-01-25', 'Squat'), // after range
+    ]
+    expect(cycleExerciseProgress(weights, cycle)).toEqual([])
+  })
+
+  it('falls back to today() as the end date when endDate is null (ongoing cycle)', () => {
+    freezeToday('2025-01-15')
+    const cycle = { startDate: '2025-01-01', endDate: null, days: [makeDay(['Squat'])] }
+    const weights = [
+      makeEntry('1', '2025-01-10', 'Squat'),
+      makeEntry('2', '2025-01-20', 'Squat'), // after "today", should be excluded
+    ]
+    const result = cycleExerciseProgress(weights, cycle)
+    expect(result[0].series).toEqual([{ x: '2025-01-10', y: 100 }])
+  })
+
+  it('uses the max weight within a session for the series value', () => {
+    const cycle = { startDate: '2025-01-01', endDate: '2025-02-01', days: [makeDay(['Squat'])] }
+    const weights: WeightEntry[] = [
+      { id: '1', date: '2025-01-05', exercise: 'Squat', sets: [{ weight: 80, reps: 8 }, { weight: 100, reps: 3 }] },
+    ]
+    expect(cycleExerciseProgress(weights, cycle)[0].first).toBe(100)
   })
 })
 

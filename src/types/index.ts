@@ -102,6 +102,18 @@ export interface ActiveProgram extends Program {
   userProgramId: string
 }
 
+export interface ProgramCycle {
+  id: string
+  userProgramId: string
+  programId: string
+  programName: string
+  cycleNumber: number
+  startDate: string
+  endDate: string | null
+  status: 'active' | 'paused' | 'completed' | 'abandoned'
+  days: ProgramDay[]
+}
+
 export interface AppState {
   weights: WeightEntry[]
   bodyweight: BodyweightEntry[]
@@ -112,6 +124,7 @@ export interface AppState {
   donations: DonationEntry[]
   water: WaterEntry[]
   programs: ActiveProgram[]
+  programHistory: ProgramCycle[]
 }
 
 export type EditModalTarget =

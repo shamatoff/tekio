@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { useAppStore } from '../../store/app'
-import { cycleInfo, getGrouped, sessionDates, defaultProgram, today } from '../../lib/utils'
+import { cycleInfo, getGrouped, sessionDates, defaultProgram, today, cycleExerciseProgress } from '../../lib/utils'
 import { CYCLE } from '../../constants/app'
 import { Card, SecTitle, EmptyMsg } from '../ui/Card'
 import { Btn, DelBtn } from '../ui/Button'
 import { SSBadge } from '../ui/Badges'
-import type { Program, ProgramDay, ActiveProgram, WeightEntry } from '../../types'
+import { MiniChart } from '../ui/MiniChart'
+import type { Program, ProgramDay, ActiveProgram, ProgramCycle, WeightEntry } from '../../types'
 
 // ── Program Editor ────────────────────────────────────────────────────────────
 
@@ -309,6 +310,75 @@ function ProgramCard({
   )
 }
 
+// ── Program History Card (one per past/paused cycle) ──────────────────────────
+
+const STATUS_BADGE: Record<ProgramCycle['status'], string> = {
+  active: '',
+  paused: '⏸ Paused',
+  completed: '🎉 Completed',
+  abandoned: '⏹ Stopped early',
+}
+
+function ProgramHistoryCard({
+  cycle,
+  weights,
+  onResume,
+  onDelete,
+}: {
+  cycle: ProgramCycle
+  weights: WeightEntry[]
+  onResume: () => void
+  onDelete: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  const progress = cycleExerciseProgress(weights, cycle)
+  const fmt = (n: number) => Math.round(n * 10) / 10
+
+  return (
+    <Card>
+      <div className="flex items-start justify-between mb-1">
+        <div>
+          <p className="text-sm font-bold text-primary">
+            {cycle.programName}{cycle.cycleNumber > 1 ? ` · Cycle ${cycle.cycleNumber}` : ''}
+          </p>
+          <p className="text-xs text-muted">
+            {cycle.startDate} – {cycle.endDate ?? 'ongoing'}
+          </p>
+        </div>
+        <span className="text-xs font-semibold text-muted shrink-0">{STATUS_BADGE[cycle.status]}</span>
+      </div>
+
+      {cycle.status === 'paused' && (
+        <div className="flex gap-2 mt-2 mb-1">
+          <Btn small onClick={onResume}>▶ Resume</Btn>
+          <DelBtn label="Delete program" onClick={onDelete} />
+        </div>
+      )}
+
+      <button onClick={() => setOpen(o => !o)} className="text-xs text-muted w-full text-left py-1 border-t border-bg mt-2">
+        {open ? '▲ Hide progress' : '▼ View progress'}
+      </button>
+
+      {open && (
+        <div className="mt-2 space-y-3">
+          {progress.length === 0 && <EmptyMsg>No exercises logged in this cycle</EmptyMsg>}
+          {progress.map(p => (
+            <div key={p.exercise}>
+              <div className="flex items-center justify-between mb-0.5">
+                <span className="text-xs font-semibold text-primary">{p.exercise}</span>
+                <span className={`text-xs font-medium ${p.delta > 0 ? 'text-accent' : p.delta < 0 ? 'text-danger' : 'text-muted'}`}>
+                  {fmt(p.first)}kg → {fmt(p.last)}kg ({p.delta > 0 ? '+' : ''}{fmt(p.delta)}kg)
+                </span>
+              </div>
+              <MiniChart data={p.series} />
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
+  )
+}
+
 // ── Main Program Tab ──────────────────────────────────────────────────────────
 
 type EditingState = { programId?: string; userProgramId?: string; draft: Program } | null
@@ -318,11 +388,13 @@ export function ProgramTab() {
   const [saving, setSaving] = useState(false)
   const {
     programs,
+    programHistory,
     weights,
     saveActiveProgram,
     advanceActiveProgram,
     restartActiveProgram,
     pauseActiveProgram,
+    resumeActiveProgram,
     removeProgram,
     setToast,
   } = useAppStore()
@@ -377,6 +449,24 @@ export function ProgramTab() {
     }
   }
 
+  const handleResume = async (cycle: ProgramCycle) => {
+    try {
+      await resumeActiveProgram(cycle.userProgramId)
+      setToast(`▶ ${cycle.programName} resumed`)
+    } catch {
+      setToast('❌ Failed to resume.')
+    }
+  }
+
+  const handleDeleteHistory = async (cycle: ProgramCycle) => {
+    try {
+      await removeProgram(cycle.programId, cycle.userProgramId)
+      setToast(`🗑 ${cycle.programName} deleted`)
+    } catch {
+      setToast('❌ Failed to delete.')
+    }
+  }
+
   if (saving) {
     return <div className="text-center py-12 text-muted text-sm">Saving program…</div>
   }
@@ -401,7 +491,7 @@ export function ProgramTab() {
           </p>
           <div className="flex flex-col gap-2">
             <Btn
-              onClick={() => handleSave(defaultProgram())}
+              onClick={() => setEditing({ draft: defaultProgram() })}
               className="w-full"
             >
               🏋️ Use 5-Day High Efficiency Split
@@ -422,6 +512,21 @@ export function ProgramTab() {
           onDelete={() => handleDelete(ap)}
         />
       ))}
+
+      {programHistory.filter(c => c.status !== 'active').length > 0 && (
+        <div className="flex flex-col gap-3">
+          <SecTitle>📜 Program History</SecTitle>
+          {programHistory.filter(c => c.status !== 'active').map(cycle => (
+            <ProgramHistoryCard
+              key={cycle.id}
+              cycle={cycle}
+              weights={weights}
+              onResume={() => handleResume(cycle)}
+              onDelete={() => handleDeleteHistory(cycle)}
+            />
+          ))}
+        </div>
+      )}
 
       <button
         onClick={() => setEditing({
