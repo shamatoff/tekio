@@ -157,6 +157,43 @@ export function currentStreak(activeDates: Set<string>): number {
   return streak
 }
 
+export interface ExerciseProgress {
+  exercise: string
+  series: { x: string; y: number }[]
+  first: number
+  last: number
+  delta: number
+}
+
+export function cycleExerciseProgress(
+  weights: WeightEntry[],
+  cycle: { startDate: string; endDate: string | null; days: ProgramDay[] }
+): ExerciseProgress[] {
+  const exerciseNames = [...new Set(cycle.days.flatMap(d => d.exercises))]
+  const end = cycle.endDate ?? today()
+
+  return exerciseNames
+    .map(exercise => {
+      const series = weights
+        .filter(w =>
+          w.exercise.toLowerCase() === exercise.toLowerCase() &&
+          w.date >= cycle.startDate &&
+          w.date <= end
+        )
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .map(w => ({ x: w.date, y: Math.max(...w.sets.map(s => s.weight)) }))
+
+      return {
+        exercise,
+        series,
+        first: series[0]?.y ?? 0,
+        last: series[series.length - 1]?.y ?? 0,
+        delta: (series[series.length - 1]?.y ?? 0) - (series[0]?.y ?? 0),
+      }
+    })
+    .filter(p => p.series.length > 0)
+}
+
 export function isTodayDone(
   weights: WeightEntry[],
   day: ProgramDay | null | undefined,

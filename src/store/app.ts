@@ -21,11 +21,13 @@ import {
 } from '../lib/db/weights'
 import {
   loadActivePrograms,
+  loadProgramCycles,
   saveProgram,
   advanceProgram,
   pauseProgram,
   hardDeleteProgram,
   restartProgram,
+  resumeProgram,
 } from '../lib/db/program'
 import { loadBodyweight, saveBodyweightEntry, deleteBodyweightEntry, updateBodyweightEntry } from '../lib/db/bodyweight'
 import { loadCardio, saveCardioEntry, deleteCardioEntry, updateCardioEntry } from '../lib/db/cardio'
@@ -67,6 +69,7 @@ interface AppStore extends AppState {
   advanceActiveProgram: (userProgramId: string, newIndex: number, date: string) => Promise<void>
   restartActiveProgram: (userProgramId: string, startDate: string) => Promise<void>
   pauseActiveProgram: (userProgramId: string) => Promise<void>
+  resumeActiveProgram: (userProgramId: string) => Promise<void>
   removeProgram: (programId: string, userProgramId: string) => Promise<void>
 
   // Bodyweight
@@ -110,6 +113,7 @@ export const useAppStore = create<AppStore>((set) => ({
   donations: [],
   water: [],
   programs: [],
+  programHistory: [],
   loading: true,
   toast: '',
   editModal: null,
@@ -137,9 +141,10 @@ export const useAppStore = create<AppStore>((set) => ({
     set({ loading: true })
     try {
       await getOrCreateUser()
-      const [weights, activePrograms, bodyweight, cardio, mobility, skills, skillTypes, donations, water] = await Promise.all([
+      const [weights, activePrograms, programHistory, bodyweight, cardio, mobility, skills, skillTypes, donations, water] = await Promise.all([
         loadWeights(),
         loadActivePrograms(),
+        loadProgramCycles(),
         loadBodyweight(),
         loadCardio(),
         loadMobility(),
@@ -159,6 +164,7 @@ export const useAppStore = create<AppStore>((set) => ({
         donations,
         water,
         programs: activePrograms,
+        programHistory,
       })
     } finally {
       set({ loading: false })
@@ -205,21 +211,32 @@ export const useAppStore = create<AppStore>((set) => ({
   },
   restartActiveProgram: async (userProgramId, startDate) => {
     await restartProgram(userProgramId, startDate)
+    const programHistory = await loadProgramCycles()
     set(s => ({
       programs: s.programs.map(p =>
         p.userProgramId === userProgramId
           ? { ...p, startDate, currentDayIndex: 0, lastAdvancedDate: startDate }
           : p
       ),
+      programHistory,
     }))
   },
   pauseActiveProgram: async (userProgramId) => {
     await pauseProgram(userProgramId)
-    set(s => ({ programs: s.programs.filter(p => p.userProgramId !== userProgramId) }))
+    const programHistory = await loadProgramCycles()
+    set(s => ({ programs: s.programs.filter(p => p.userProgramId !== userProgramId), programHistory }))
+  },
+  resumeActiveProgram: async (userProgramId) => {
+    await resumeProgram(userProgramId)
+    const [programs, programHistory] = await Promise.all([loadActivePrograms(), loadProgramCycles()])
+    set({ programs, programHistory })
   },
   removeProgram: async (programId, userProgramId) => {
     await hardDeleteProgram(programId, userProgramId)
-    set(s => ({ programs: s.programs.filter(p => p.userProgramId !== userProgramId) }))
+    set(s => ({
+      programs: s.programs.filter(p => p.userProgramId !== userProgramId),
+      programHistory: s.programHistory.filter(c => c.userProgramId !== userProgramId),
+    }))
   },
 
   // ── Bodyweight ───────────────────────────────────────────────────────────────
