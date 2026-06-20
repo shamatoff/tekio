@@ -157,12 +157,26 @@ export function currentStreak(activeDates: Set<string>): number {
   return streak
 }
 
-export interface ExerciseProgress {
-  exercise: string
+export interface MetricSeries {
   series: { x: string; y: number }[]
   first: number
   last: number
   delta: number
+}
+
+export interface ExerciseProgress {
+  exercise: string
+  maxWeight: MetricSeries
+  volume: MetricSeries
+}
+
+function toMetricSeries(points: { x: string; y: number }[]): MetricSeries {
+  return {
+    series: points,
+    first: points[0]?.y ?? 0,
+    last: points[points.length - 1]?.y ?? 0,
+    delta: (points[points.length - 1]?.y ?? 0) - (points[0]?.y ?? 0),
+  }
 }
 
 export function cycleExerciseProgress(
@@ -174,24 +188,20 @@ export function cycleExerciseProgress(
 
   return exerciseNames
     .map(exercise => {
-      const series = weights
+      const entries = weights
         .filter(w =>
           w.exercise.toLowerCase() === exercise.toLowerCase() &&
           w.date >= cycle.startDate &&
           w.date <= end
         )
         .sort((a, b) => a.date.localeCompare(b.date))
-        .map(w => ({ x: w.date, y: Math.max(...w.sets.map(s => s.weight)) }))
 
-      return {
-        exercise,
-        series,
-        first: series[0]?.y ?? 0,
-        last: series[series.length - 1]?.y ?? 0,
-        delta: (series[series.length - 1]?.y ?? 0) - (series[0]?.y ?? 0),
-      }
+      const maxWeight = toMetricSeries(entries.map(w => ({ x: w.date, y: Math.max(...w.sets.map(s => s.weight)) })))
+      const volume = toMetricSeries(entries.map(w => ({ x: w.date, y: w.sets.reduce((a, s) => a + s.weight * s.reps, 0) })))
+
+      return { exercise, maxWeight, volume }
     })
-    .filter(p => p.series.length > 0)
+    .filter(p => p.maxWeight.series.length > 0)
 }
 
 export function isTodayDone(

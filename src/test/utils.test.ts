@@ -199,8 +199,20 @@ describe('cycleExerciseProgress', () => {
     ]
     const result = cycleExerciseProgress(weights, cycle)
     expect(result).toHaveLength(1)
-    expect(result[0]).toMatchObject({ exercise: 'Squat', first: 100, last: 120, delta: 20 })
-    expect(result[0].series).toEqual([{ x: '2025-01-05', y: 100 }, { x: '2025-01-20', y: 120 }])
+    expect(result[0].exercise).toBe('Squat')
+    expect(result[0].maxWeight).toMatchObject({ first: 100, last: 120, delta: 20 })
+    expect(result[0].maxWeight.series).toEqual([{ x: '2025-01-05', y: 100 }, { x: '2025-01-20', y: 120 }])
+  })
+
+  it('computes volume (weight × reps summed per session) alongside max weight', () => {
+    const cycle = { startDate: '2025-01-01', endDate: '2025-02-01', days: [makeDay(['Squat'])] }
+    const weights: WeightEntry[] = [
+      { id: '1', date: '2025-01-05', exercise: 'Squat', sets: [{ weight: 100, reps: 5 }, { weight: 80, reps: 8 }] },
+      { id: '2', date: '2025-01-20', exercise: 'Squat', sets: [{ weight: 120, reps: 5 }] },
+    ]
+    const result = cycleExerciseProgress(weights, cycle)
+    expect(result[0].volume.series).toEqual([{ x: '2025-01-05', y: 1140 }, { x: '2025-01-20', y: 600 }])
+    expect(result[0].volume).toMatchObject({ first: 1140, last: 600, delta: -540 })
   })
 
   it('excludes entries outside the cycle date range', () => {
@@ -220,15 +232,15 @@ describe('cycleExerciseProgress', () => {
       makeEntry('2', '2025-01-20', 'Squat'), // after "today", should be excluded
     ]
     const result = cycleExerciseProgress(weights, cycle)
-    expect(result[0].series).toEqual([{ x: '2025-01-10', y: 100 }])
+    expect(result[0].maxWeight.series).toEqual([{ x: '2025-01-10', y: 100 }])
   })
 
-  it('uses the max weight within a session for the series value', () => {
+  it('uses the max weight within a session for the maxWeight series value', () => {
     const cycle = { startDate: '2025-01-01', endDate: '2025-02-01', days: [makeDay(['Squat'])] }
     const weights: WeightEntry[] = [
       { id: '1', date: '2025-01-05', exercise: 'Squat', sets: [{ weight: 80, reps: 8 }, { weight: 100, reps: 3 }] },
     ]
-    expect(cycleExerciseProgress(weights, cycle)[0].first).toBe(100)
+    expect(cycleExerciseProgress(weights, cycle)[0].maxWeight.first).toBe(100)
   })
 })
 
