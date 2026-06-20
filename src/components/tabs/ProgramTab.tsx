@@ -377,9 +377,12 @@ function ProgramHistoryCard({
               <div key={p.exercise}>
                 <div className="flex items-center justify-between mb-0.5">
                   <span className="text-xs font-semibold text-primary">{p.exercise}</span>
-                  <span className={`text-xs font-medium ${m.delta > 0 ? 'text-accent' : m.delta < 0 ? 'text-danger' : 'text-muted'}`}>
-                    {fmt(m.first)}{unit} → {fmt(m.last)}{unit} ({m.delta > 0 ? '+' : ''}{fmt(m.delta)}{unit})
-                  </span>
+                  <div className="text-right">
+                    <span className={`text-xs font-medium ${m.delta > 0 ? 'text-accent' : m.delta < 0 ? 'text-danger' : 'text-muted'}`}>
+                      {fmt(m.first)}{unit} → {fmt(m.last)}{unit} ({m.delta > 0 ? '+' : ''}{fmt(m.delta)}{unit})
+                    </span>
+                    <p className="text-[11px] text-muted">Peak {fmt(m.peak)}{unit}</p>
+                  </div>
                 </div>
                 <MiniChart data={m.series} />
               </div>
