@@ -5,6 +5,7 @@ import { CYCLE } from '../../constants/app'
 import { Card, SecTitle, EmptyMsg } from '../ui/Card'
 import { Btn, DelBtn } from '../ui/Button'
 import { SSBadge } from '../ui/Badges'
+import { Chip } from '../ui/Chip'
 import { MiniChart } from '../ui/MiniChart'
 import type { Program, ProgramDay, ActiveProgram, ProgramCycle, WeightEntry } from '../../types'
 
@@ -331,8 +332,10 @@ function ProgramHistoryCard({
   onDelete: () => void
 }) {
   const [open, setOpen] = useState(false)
+  const [metric, setMetric] = useState<'maxWeight' | 'volume'>('maxWeight')
   const progress = cycleExerciseProgress(weights, cycle)
   const fmt = (n: number) => Math.round(n * 10) / 10
+  const unit = metric === 'maxWeight' ? 'kg' : ''
 
   return (
     <Card>
@@ -361,18 +364,27 @@ function ProgramHistoryCard({
 
       {open && (
         <div className="mt-2 space-y-3">
-          {progress.length === 0 && <EmptyMsg>No exercises logged in this cycle</EmptyMsg>}
-          {progress.map(p => (
-            <div key={p.exercise}>
-              <div className="flex items-center justify-between mb-0.5">
-                <span className="text-xs font-semibold text-primary">{p.exercise}</span>
-                <span className={`text-xs font-medium ${p.delta > 0 ? 'text-accent' : p.delta < 0 ? 'text-danger' : 'text-muted'}`}>
-                  {fmt(p.first)}kg → {fmt(p.last)}kg ({p.delta > 0 ? '+' : ''}{fmt(p.delta)}kg)
-                </span>
-              </div>
-              <MiniChart data={p.series} />
+          {progress.length > 0 && (
+            <div className="flex gap-1">
+              <Chip small active={metric === 'maxWeight'} onClick={() => setMetric('maxWeight')}>Max kg</Chip>
+              <Chip small active={metric === 'volume'} onClick={() => setMetric('volume')}>Volume</Chip>
             </div>
-          ))}
+          )}
+          {progress.length === 0 && <EmptyMsg>No exercises logged in this cycle</EmptyMsg>}
+          {progress.map(p => {
+            const m = p[metric]
+            return (
+              <div key={p.exercise}>
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-xs font-semibold text-primary">{p.exercise}</span>
+                  <span className={`text-xs font-medium ${m.delta > 0 ? 'text-accent' : m.delta < 0 ? 'text-danger' : 'text-muted'}`}>
+                    {fmt(m.first)}{unit} → {fmt(m.last)}{unit} ({m.delta > 0 ? '+' : ''}{fmt(m.delta)}{unit})
+                  </span>
+                </div>
+                <MiniChart data={m.series} />
+              </div>
+            )
+          })}
         </div>
       )}
     </Card>
