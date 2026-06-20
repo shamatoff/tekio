@@ -204,6 +204,17 @@ describe('cycleExerciseProgress', () => {
     expect(result[0].maxWeight.series).toEqual([{ x: '2025-01-05', y: 100 }, { x: '2025-01-20', y: 120 }])
   })
 
+  it('reports the peak value even when it falls between first and last', () => {
+    const cycle = { startDate: '2025-01-01', endDate: '2025-02-01', days: [makeDay(['Squat'])] }
+    const weights: WeightEntry[] = [
+      { id: '1', date: '2025-01-05', exercise: 'Squat', sets: [{ weight: 100, reps: 5 }] },
+      { id: '2', date: '2025-01-12', exercise: 'Squat', sets: [{ weight: 130, reps: 5 }] }, // peak, mid-cycle
+      { id: '3', date: '2025-01-20', exercise: 'Squat', sets: [{ weight: 115, reps: 5 }] },
+    ]
+    const result = cycleExerciseProgress(weights, cycle)
+    expect(result[0].maxWeight).toMatchObject({ first: 100, last: 115, peak: 130, delta: 15 })
+  })
+
   it('computes volume (weight × reps summed per session) alongside max weight', () => {
     const cycle = { startDate: '2025-01-01', endDate: '2025-02-01', days: [makeDay(['Squat'])] }
     const weights: WeightEntry[] = [

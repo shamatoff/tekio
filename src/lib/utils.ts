@@ -161,6 +161,7 @@ export interface MetricSeries {
   series: { x: string; y: number }[]
   first: number
   last: number
+  peak: number
   delta: number
 }
 
@@ -175,6 +176,7 @@ function toMetricSeries(points: { x: string; y: number }[]): MetricSeries {
     series: points,
     first: points[0]?.y ?? 0,
     last: points[points.length - 1]?.y ?? 0,
+    peak: points.length > 0 ? Math.max(...points.map(p => p.y)) : 0,
     delta: (points[points.length - 1]?.y ?? 0) - (points[0]?.y ?? 0),
   }
 }
