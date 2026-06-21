@@ -103,7 +103,7 @@ interface AppStore extends AppState {
   editWaterEntry: (id: string, patch: Omit<WaterEntry, 'id'>) => Promise<void>
 }
 
-export const useAppStore = create<AppStore>((set) => ({
+export const useAppStore = create<AppStore>((set, get) => ({
   weights: [],
   bodyweight: [],
   cardio: [],
@@ -329,6 +329,13 @@ export const useAppStore = create<AppStore>((set) => ({
 
   // ── Water ────────────────────────────────────────────────────────────────────
   addWaterEntry: async (entry) => {
+    const existing = get().water.find(w => w.date === entry.date)
+    if (existing) {
+      const patch = { date: existing.date, amountMl: existing.amountMl + entry.amountMl }
+      await updateWaterEntry(existing.id, patch)
+      set(s => ({ water: s.water.map(w => (w.id === existing.id ? { ...w, ...patch } : w)) }))
+      return
+    }
     const saved = await saveWaterEntry(entry)
     set(s => ({ water: [saved, ...s.water] }))
   },
