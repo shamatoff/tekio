@@ -1,4 +1,4 @@
-import type { WeightEntry, Program, ProgramDay } from '../types'
+import type { WeightEntry, Program, ProgramDay, ProgramWeekOverride, MobilityEntry, DayOfWeek } from '../types'
 
 export type GroupedExercise =
   | { type: 'single'; exercises: [string] }
@@ -212,5 +212,123 @@ export function isTodayDone(
 ): boolean {
   return (day?.exercises ?? []).every((ex) =>
     weights.some((w) => w.date === today() && w.exercise === ex),
+  )
+}
+
+// ── Day resolution (block-aware programs) ─────────────────────────────────────
+
+export const WEEKDAYS: DayOfWeek[] = [
+  'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
+]
+
+/** Weekday name for a date string (defaults to today). */
+export function weekdayOf(s: string = today()): DayOfWeek {
+  const jsDay = new Date(s).getDay() // 0 = Sunday … 6 = Saturday
+  return WEEKDAYS[(jsDay + 6) % 7]
+}
+
+export type ProgramMode = 'weekday' | 'flexible' | 'index'
+
+/**
+ * How "today's day" is chosen for a program:
+ * - `weekday`  — at least one day is pinned to a day-of-week → pick by calendar.
+ * - `flexible` — a phased program with no pinned days (Adjustment) → weekly checklist.
+ * - `index`    — legacy flat program → sequential `currentDayIndex`.
+ */
+export function programMode(program: Program): ProgramMode {
+  const days = program.days ?? []
+  if (days.some(d => d.dayOfWeek)) return 'weekday'
+  if (program.phases && program.phases.length > 0) return 'flexible'
+  return 'index'
+}
+
+/**
+ * Resolves the single day to show today for `weekday`/`index` modes (null = rest).
+ * In weekday mode, `variantWeekdays` selects the variant day instead of the base
+ * for any weekday the user has toggled on for the current week.
+ */
+export function resolveTodayDay(
+  program: Program,
+  date: string = today(),
+  variantWeekdays?: Set<DayOfWeek>,
+): ProgramDay | null {
+  const days = program.days ?? []
+  if (days.length === 0) return null
+  const mode = programMode(program)
+  if (mode === 'index') {
+    return days[program.currentDayIndex % days.length] ?? null
+  }
+  if (mode === 'weekday') {
+    const wd = weekdayOf(date)
+    const matches = days.filter(d => d.dayOfWeek === wd)
+    if (matches.length === 0) return null
+    if (variantWeekdays?.has(wd)) {
+      return matches.find(d => d.isVariant) ?? matches.find(d => !d.isVariant) ?? matches[0]
+    }
+    return matches.find(d => !d.isVariant) ?? matches[0]
+  }
+  return null // flexible mode is handled by the weekly checklist
+}
+
+/** Weekdays whose variant is toggled on for a program (overrides are current-week). */
+export function activeVariantWeekdays(
+  overrides: ProgramWeekOverride[],
+  userProgramId: string,
+): Set<DayOfWeek> {
+  return new Set(
+    overrides
+      .filter(o => o.userProgramId === userProgramId && o.variantActive)
+      .map(o => o.dayOfWeek),
+  )
+}
+
+export interface VariantGroup {
+  weekday: DayOfWeek
+  base: ProgramDay | null
+  variant: ProgramDay
+}
+
+/** Weekdays that have a stored variant day, paired with their base day (if any). */
+export function variantGroups(program: Program): VariantGroup[] {
+  const days = program.days ?? []
+  return days
+    .filter(d => d.isVariant && d.dayOfWeek)
+    .map(v => ({
+      weekday: v.dayOfWeek as DayOfWeek,
+      base: days.find(d => !d.isVariant && d.dayOfWeek === v.dayOfWeek) ?? null,
+      variant: v,
+    }))
+}
+
+export const WEEKLY_STRETCH_TARGET_MIN = 5
+
+/** Sums mobility minutes per muscle group within [weekStartDate, date]. */
+export function weeklyMuscleVolume(
+  mobility: MobilityEntry[],
+  weekStartDate: string,
+  date: string = today(),
+): Record<string, number> {
+  const out: Record<string, number> = {}
+  for (const m of mobility) {
+    if (m.date < weekStartDate || m.date > date) continue
+    for (const e of m.exercises) {
+      for (const g of e.muscleGroups ?? []) {
+        out[g] = (out[g] ?? 0) + e.duration
+      }
+    }
+  }
+  return out
+}
+
+/** True when every weight exercise of `day` was logged within [weekStartDate, today]. */
+export function isDayDoneInWeek(
+  weights: WeightEntry[],
+  day: ProgramDay,
+  weekStartDate: string,
+  date: string = today(),
+): boolean {
+  if (day.exercises.length === 0) return false
+  return day.exercises.every(ex =>
+    weights.some(w => w.exercise === ex && w.date >= weekStartDate && w.date <= date),
   )
 }

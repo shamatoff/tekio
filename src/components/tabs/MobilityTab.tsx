@@ -1,29 +1,58 @@
 import { useState } from 'react'
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Line } from 'recharts'
 import { useAppStore } from '../../store/app'
-import { today } from '../../lib/utils'
+import { usePrefs } from '../../store/prefs'
+import { today, startOfWeek, weeklyMuscleVolume, WEEKLY_STRETCH_TARGET_MIN } from '../../lib/utils'
 import { Card, SecTitle } from '../ui/Card'
 import { Inp } from '../ui/Input'
 import { Btn, DelBtn, EditBtn } from '../ui/Button'
+import { Chip } from '../ui/Chip'
 import { SmartInput } from '../ui/SmartInput'
 import { HistoryList } from '../ui/HistoryList'
 import type { MobilityExercise } from '../../types'
 
 function emptyExercise(): MobilityExercise {
-  return { name: '', duration: 0, notes: '' }
+  return { name: '', duration: 0, notes: '', muscleGroups: [] }
 }
 
 export function MobilityTab() {
   const [date, setDate] = useState(today())
   const [exercises, setExercises] = useState<MobilityExercise[]>([emptyExercise()])
   const [revealedEx, setRevealedEx] = useState(1)
+  const [muscleOpen, setMuscleOpen] = useState<number | null>(null)
   const [selEx, setSelEx] = useState('')
-  const { mobility, addMobilityEntry, removeMobilityEntry, openEditModal, setToast } = useAppStore()
+  const { mobility, muscleGroups, addMobilityEntry, removeMobilityEntry, openEditModal, setToast } = useAppStore()
+  const { weekStartDay } = usePrefs()
 
   const allExNames = [...new Set(mobility.flatMap(m => m.exercises.map(e => e.name)))].sort()
 
+  // Canonical muscle tags per exercise name (for auto-fill when re-logging).
+  const tagsByName = new Map<string, string[]>()
+  for (const m of mobility) {
+    for (const e of m.exercises) {
+      if (e.muscleGroups && e.muscleGroups.length > 0) tagsByName.set(e.name.toLowerCase(), e.muscleGroups)
+    }
+  }
+
   const updateEx = (i: number, field: keyof MobilityExercise, value: string | number) => {
-    setExercises(prev => prev.map((e, j) => j === i ? { ...e, [field]: value } : e))
+    setExercises(prev => prev.map((e, j) => {
+      if (j !== i) return e
+      const next = { ...e, [field]: value }
+      // Auto-fill known muscle tags the first time a name is entered.
+      if (field === 'name' && (!e.muscleGroups || e.muscleGroups.length === 0)) {
+        const known = tagsByName.get(String(value).trim().toLowerCase())
+        if (known) next.muscleGroups = [...known]
+      }
+      return next
+    }))
+  }
+
+  const toggleMuscle = (i: number, group: string) => {
+    setExercises(prev => prev.map((e, j) => {
+      if (j !== i) return e
+      const cur = e.muscleGroups ?? []
+      return { ...e, muscleGroups: cur.includes(group) ? cur.filter(g => g !== group) : [...cur, group] }
+    }))
   }
 
   const add = async () => {
@@ -33,6 +62,7 @@ export function MobilityTab() {
       await addMobilityEntry({ date, exercises: valid, duration: valid.reduce((s, e) => s + e.duration, 0) })
       setExercises([emptyExercise()])
       setRevealedEx(1)
+      setMuscleOpen(null)
       setToast('✅ Session logged!')
     } catch {
       setToast('❌ Failed to save.')
@@ -50,34 +80,71 @@ export function MobilityTab() {
 
   const sortedMobility = [...mobility].sort((a, b) => b.date.localeCompare(a.date))
 
+  // ── Weekly per-muscle-group volume ──────────────────────────────────────────
+  const weekStart = startOfWeek(today(), weekStartDay)
+  const weekVol = weeklyMuscleVolume(mobility, weekStart)
+  const taggedGroups = [...new Set(mobility.flatMap(m => m.exercises.flatMap(e => e.muscleGroups ?? [])))]
+  const volRows = taggedGroups
+    .map(group => ({ group, minutes: weekVol[group] ?? 0 }))
+    .sort((a, b) => {
+      const am = a.minutes >= WEEKLY_STRETCH_TARGET_MIN ? 1 : 0
+      const bm = b.minutes >= WEEKLY_STRETCH_TARGET_MIN ? 1 : 0
+      return am - bm || a.minutes - b.minutes || a.group.localeCompare(b.group)
+    })
+
   return (
     <div className="flex flex-col gap-4">
       <Card>
         <SecTitle>Log Session</SecTitle>
         <Inp label="Date" type="date" value={date} onChange={e => setDate(e.target.value)} className="mb-3" />
 
-        {exercises.slice(0, revealedEx).map((ex, i) => (
-          <div key={i} className="grid grid-cols-[1fr_80px_1fr] gap-2 mb-2 items-end">
-            <SmartInput
-              value={ex.name}
-              onChange={v => updateEx(i, 'name', v)}
-              suggestions={allExNames}
-              placeholder={`Exercise ${i + 1}`}
-            />
-            <Inp
-              type="number"
-              value={ex.duration || ''}
-              onChange={e => updateEx(i, 'duration', +e.target.value)}
-              placeholder="min"
-              min="1"
-            />
-            <Inp
-              value={ex.notes}
-              onChange={e => updateEx(i, 'notes', e.target.value)}
-              placeholder="Notes"
-            />
-          </div>
-        ))}
+        {exercises.slice(0, revealedEx).map((ex, i) => {
+          const selected = ex.muscleGroups ?? []
+          return (
+            <div key={i} className="mb-3 last:mb-0">
+              <div className="grid grid-cols-[1fr_80px_1fr] gap-2 items-end">
+                <SmartInput
+                  value={ex.name}
+                  onChange={v => updateEx(i, 'name', v)}
+                  suggestions={allExNames}
+                  placeholder={`Exercise ${i + 1}`}
+                />
+                <Inp
+                  type="number"
+                  value={ex.duration || ''}
+                  onChange={e => updateEx(i, 'duration', +e.target.value)}
+                  placeholder="min"
+                  min="1"
+                />
+                <Inp
+                  value={ex.notes}
+                  onChange={e => updateEx(i, 'notes', e.target.value)}
+                  placeholder="Notes"
+                />
+              </div>
+              <div className="mt-1.5">
+                <button
+                  onClick={() => setMuscleOpen(o => (o === i ? null : i))}
+                  className="text-[11px] text-accent"
+                >
+                  🏷️ Muscles{selected.length > 0 ? ` (${selected.length})` : ''} {muscleOpen === i ? '▲' : '▼'}
+                </button>
+                {selected.length > 0 && muscleOpen !== i && (
+                  <span className="text-[11px] text-muted ml-2">{selected.join(', ')}</span>
+                )}
+                {muscleOpen === i && (
+                  <div className="flex flex-wrap gap-1 mt-1.5 p-2 rounded-lg bg-bg border border-border">
+                    {muscleGroups.map(g => (
+                      <Chip key={g.id} small active={selected.includes(g.name)} onClick={() => toggleMuscle(i, g.name)}>
+                        {g.name}
+                      </Chip>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })}
 
         <div className="flex gap-2 mt-2">
           {revealedEx < 8 && (
@@ -95,6 +162,30 @@ export function MobilityTab() {
           <Btn onClick={add} className="flex-1">Log Session</Btn>
         </div>
       </Card>
+
+      {volRows.length > 0 && (
+        <Card>
+          <SecTitle>This Week's Stretch Volume</SecTitle>
+          <p className="text-[11px] text-muted mb-3">Target: {WEEKLY_STRETCH_TARGET_MIN} min per muscle group / week</p>
+          <div className="flex flex-col gap-2">
+            {volRows.map(({ group, minutes }) => {
+              const met = minutes >= WEEKLY_STRETCH_TARGET_MIN
+              const pct = Math.min(minutes / WEEKLY_STRETCH_TARGET_MIN, 1) * 100
+              return (
+                <div key={group}>
+                  <div className="flex items-center justify-between mb-0.5">
+                    <span className="text-xs text-primary">{met ? '✅ ' : ''}{group}</span>
+                    <span className={`text-[11px] font-medium ${met ? 'text-success' : 'text-muted'}`}>{minutes} / {WEEKLY_STRETCH_TARGET_MIN} min</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-bg overflow-hidden">
+                    <div className={`h-full rounded-full ${met ? 'bg-success' : 'bg-accent'}`} style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </Card>
+      )}
 
       {allExNames.length > 0 && (
         <Card>
@@ -141,6 +232,9 @@ export function MobilityTab() {
               {m.exercises.map((e, i) => (
                 <div key={i} className="text-xs text-muted ml-2">
                   {e.name} — {e.duration}min{e.notes ? ` (${e.notes})` : ''}
+                  {e.muscleGroups && e.muscleGroups.length > 0 && (
+                    <span className="text-[10px] text-accent"> · {e.muscleGroups.join(', ')}</span>
+                  )}
                 </div>
               ))}
             </div>
