@@ -28,15 +28,18 @@ import {
   hardDeleteProgram,
   restartProgram,
   resumeProgram,
+  loadWeekOverrides,
+  setWeekOverride,
 } from '../lib/db/program'
+import { startOfWeek, today } from '../lib/utils'
 import { loadBodyweight, saveBodyweightEntry, deleteBodyweightEntry, updateBodyweightEntry } from '../lib/db/bodyweight'
 import { loadCardio, saveCardioEntry, deleteCardioEntry, updateCardioEntry } from '../lib/db/cardio'
-import { loadMobility, saveMobilityEntry, deleteMobilityEntry, updateMobilityEntry } from '../lib/db/mobility'
+import { loadMobility, loadMuscleGroups, saveMobilityEntry, deleteMobilityEntry, updateMobilityEntry } from '../lib/db/mobility'
 import { loadSkills, loadSkillTypes, saveSkillEntry, deleteSkillEntry, updateSkillEntry } from '../lib/db/skills'
 import { loadDonations, saveDonationEntry, deleteDonationEntry, updateDonationEntry } from '../lib/db/donations'
 import { loadWater, saveWaterEntry, deleteWaterEntry, updateWaterEntry } from '../lib/db/water'
 import { usePrefs } from './prefs'
-import type { LiftSet } from '../types'
+import type { LiftSet, DayOfWeek } from '../types'
 
 interface AppStore extends AppState {
   loading: boolean
@@ -71,6 +74,7 @@ interface AppStore extends AppState {
   pauseActiveProgram: (userProgramId: string) => Promise<void>
   resumeActiveProgram: (userProgramId: string) => Promise<void>
   removeProgram: (programId: string, userProgramId: string) => Promise<void>
+  toggleWeekVariant: (userProgramId: string, dayOfWeek: DayOfWeek, variantActive: boolean) => Promise<void>
 
   // Bodyweight
   addBodyweightEntry: (entry: Omit<BodyweightEntry, 'id'>) => Promise<void>
@@ -103,6 +107,23 @@ interface AppStore extends AppState {
   editWaterEntry: (id: string, patch: Omit<WaterEntry, 'id'>) => Promise<void>
 }
 
+/** Muscle-group tags are canonical per exercise name, so propagate freshly-saved
+ *  tags to every other mobility entry that uses the same exercise. */
+function applyMuscleTags(entries: MobilityEntry[], tagged: MobilityEntry['exercises']): MobilityEntry[] {
+  const byName = new Map<string, string[]>()
+  for (const e of tagged) {
+    if (e.muscleGroups && e.muscleGroups.length > 0) byName.set(e.name.toLowerCase(), e.muscleGroups)
+  }
+  if (byName.size === 0) return entries
+  return entries.map(m => ({
+    ...m,
+    exercises: m.exercises.map(e => {
+      const tags = byName.get(e.name.toLowerCase())
+      return tags ? { ...e, muscleGroups: tags } : e
+    }),
+  }))
+}
+
 export const useAppStore = create<AppStore>((set, get) => ({
   weights: [],
   bodyweight: [],
@@ -114,6 +135,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
   water: [],
   programs: [],
   programHistory: [],
+  weekOverrides: [],
+  muscleGroups: [],
   loading: true,
   toast: '',
   editModal: null,
@@ -141,13 +164,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({ loading: true })
     try {
       await getOrCreateUser()
-      const [weights, activePrograms, programHistory, bodyweight, cardio, mobility, skills, skillTypes, donations, water] = await Promise.all([
+      const [weights, activePrograms, programHistory, weekOverrides, bodyweight, cardio, mobility, muscleGroups, skills, skillTypes, donations, water] = await Promise.all([
         loadWeights(),
         loadActivePrograms(),
         loadProgramCycles(),
+        loadWeekOverrides(),
         loadBodyweight(),
         loadCardio(),
         loadMobility(),
+        loadMuscleGroups(),
         loadSkills(),
         loadSkillTypes(),
         loadDonations(),
@@ -159,12 +184,14 @@ export const useAppStore = create<AppStore>((set, get) => ({
         bodyweight,
         cardio,
         mobility,
+        muscleGroups,
         skills,
         skillTypes,
         donations,
         water,
         programs: activePrograms,
         programHistory,
+        weekOverrides,
       })
     } finally {
       set({ loading: false })
@@ -236,7 +263,18 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set(s => ({
       programs: s.programs.filter(p => p.userProgramId !== userProgramId),
       programHistory: s.programHistory.filter(c => c.userProgramId !== userProgramId),
+      weekOverrides: s.weekOverrides.filter(o => o.userProgramId !== userProgramId),
     }))
+  },
+  toggleWeekVariant: async (userProgramId, dayOfWeek, variantActive) => {
+    const weekStartDate = startOfWeek(today())
+    await setWeekOverride(userProgramId, weekStartDate, dayOfWeek, variantActive)
+    set(s => {
+      const others = s.weekOverrides.filter(
+        o => !(o.userProgramId === userProgramId && o.weekStartDate === weekStartDate && o.dayOfWeek === dayOfWeek),
+      )
+      return { weekOverrides: [...others, { userProgramId, weekStartDate, dayOfWeek, variantActive }] }
+    })
   },
 
   // ── Bodyweight ───────────────────────────────────────────────────────────────
@@ -278,7 +316,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   // ── Mobility ─────────────────────────────────────────────────────────────────
   addMobilityEntry: async (entry) => {
     const saved = await saveMobilityEntry(entry)
-    set(s => ({ mobility: [saved, ...s.mobility] }))
+    set(s => ({ mobility: applyMuscleTags([saved, ...s.mobility], saved.exercises) }))
   },
   removeMobilityEntry: async (id) => {
     await deleteMobilityEntry(id)
@@ -286,7 +324,12 @@ export const useAppStore = create<AppStore>((set, get) => ({
   },
   editMobilityEntry: async (id, patch) => {
     await updateMobilityEntry(id, patch)
-    set(s => ({ mobility: s.mobility.map(m => (m.id === id ? { ...m, ...patch } : m)) }))
+    set(s => ({
+      mobility: applyMuscleTags(
+        s.mobility.map(m => (m.id === id ? { ...m, ...patch } : m)),
+        patch.exercises,
+      ),
+    }))
   },
 
   // ── Skills ───────────────────────────────────────────────────────────────────

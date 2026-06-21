@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Line } from 'recharts'
 import { useAppStore } from '../../../store/app'
-import { today, cycleInfo, isDeloadDate, isTodayDone } from '../../../lib/utils'
+import { today, cycleInfo, isDeloadDate, isTodayDone, programMode, activeVariantWeekdays } from '../../../lib/utils'
 import { Card, SecTitle } from '../../ui/Card'
 import { Inp } from '../../ui/Input'
 import { Btn, DelBtn, EditBtn } from '../../ui/Button'
@@ -25,12 +25,15 @@ export function WeightsTab() {
   const [ssExercises, setSsExercises] = useState<[string, string] | null>(null)
   const [ssInitialSets, setSsInitialSets] = useState<{ sets0?: LiftSet[]; sets1?: LiftSet[] } | null>(null)
 
-  const { weights, programs, addWeightEntry, removeWeightEntry, openEditModal, advanceActiveProgram, setToast } = useAppStore()
+  const { weights, programs, weekOverrides, addWeightEntry, removeWeightEntry, openEditModal, advanceActiveProgram, toggleWeekVariant, setToast } = useAppStore()
 
-  // Auto-advance each program when all today's exercises are logged
+  // Auto-advance sequential (legacy index-mode) programs when today's day is done.
+  // Weekday-pinned and flexible programs derive their day from the calendar/checklist
+  // instead, so there's no index to advance.
   useEffect(() => {
     for (const ap of programs) {
       if (cycleInfo(ap).isComplete) continue
+      if (programMode(ap) !== 'index') continue
       const day = ap.days[ap.currentDayIndex % ap.days.length]
       if (!day || day.exercises.length === 0) continue
       if (isTodayDone(weights, day) && ap.lastAdvancedDate !== today()) {
@@ -147,6 +150,8 @@ export function WeightsTab() {
             key={ap.userProgramId}
             program={ap}
             weights={weights}
+            variantWeekdays={activeVariantWeekdays(weekOverrides, ap.userProgramId)}
+            onToggleVariant={(dow, active) => toggleWeekVariant(ap.userProgramId, dow, active)}
             onPickSingle={n => { setSsExercises(null); handleSelectEx(n); setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50) }}
             onPickSingleWithSets={handlePickWithSets}
             onPickSuperset={exArr => { setSsInitialSets(null); setSsExercises(exArr); setEx(''); setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50) }}
