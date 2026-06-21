@@ -44,6 +44,11 @@ mirror it back here as a migration file so the two never drift.
   stays sequential (index mode). `db pull` does **not** capture data migrations,
   so this SQL is preserved here for the record; it is idempotent and already
   applied.
+- **`seed_volleyball_program_v1`** — **data** seed. Creates the active
+  "Volleyball Performance & Healthspan" program (9 day rows = 7 weekday-pinned
+  days + Thursday/Saturday variant days, 32 blocks, 78 tagged exercises, 2
+  supersets, weekly principles). Drafted from the sports-physician context doc;
+  sets/reps/loads are placeholders to refine in-app. Not captured by `db pull`.
 
 ```sql
 do $$
