@@ -34,6 +34,19 @@ export interface MuscleGroup {
   id: string
   name: string
   bodyRegion: BodyRegion
+  /** Parent muscle group id (e.g. Lateral Deltoid → Shoulders); null/undefined = top-level group. */
+  parentId?: string | null
+}
+
+export type MuscleContribution = 'stimulus' | 'recovery'
+
+/** A link between an exercise and a muscle group, weighted by impact level (1 = most direct). */
+export interface ExerciseMuscleLink {
+  exercise: string
+  group: string
+  region: BodyRegion
+  level: 1 | 2 | 3
+  contribution: MuscleContribution
 }
 
 export interface MobilityExercise {
@@ -188,6 +201,58 @@ export interface ProgramWeekOverride {
   variantActive: boolean
 }
 
+// ── Habits / Milestones ───────────────────────────────────────────────────────
+
+export type HabitCadence = 'daily' | 'weekly' | 'monthly'
+
+/** Where a habit's progress is auto-derived from. `none` = manual check-off. */
+export type HabitAutoSource =
+  | 'none'
+  | 'weight_sets'
+  | 'mobility_minutes'
+  | 'water'
+  | 'cardio_sessions'
+
+export interface Habit {
+  id: string
+  name: string
+  /** Emoji shown in lists/cards. */
+  icon?: string | null
+  cadence: HabitCadence
+  /** Goal for the period, e.g. 15 (sets), 2500 (ml), 1 (a simple check-off). */
+  targetCount: number
+  /** Display unit: 'sets' | 'minutes' | 'ml' | 'sessions' | null. */
+  unit?: string | null
+  /** Linked muscle group (drives weight_sets / mobility_minutes auto-count + dashboard). */
+  muscleGroupId?: string | null
+  /** Linked exercise (alternative to a muscle group). */
+  exerciseId?: string | null
+  autoSource: HabitAutoSource
+  /** For muscle auto-count: include exercise links whose level ≤ this. */
+  countLevel: 1 | 2 | 3
+  contribution: MuscleContribution
+  active: boolean
+  sortOrder: number
+  notes?: string | null
+}
+
+export interface HabitCompletion {
+  id: string
+  habitId: string
+  /** Start of the day/week/month bucket (YYYY-MM-DD). */
+  periodStart: string
+  count: number
+  notes?: string | null
+}
+
+/** Computed live (not persisted) progress of a habit for its current period. */
+export interface HabitProgress {
+  current: number
+  target: number
+  done: boolean
+  periodStart: string
+}
+
 export interface AppState {
   weights: WeightEntry[]
   bodyweight: BodyweightEntry[]
@@ -201,6 +266,9 @@ export interface AppState {
   programHistory: ProgramCycle[]
   weekOverrides: ProgramWeekOverride[]
   muscleGroups: MuscleGroup[]
+  exerciseMuscles: ExerciseMuscleLink[]
+  habits: Habit[]
+  habitCompletions: HabitCompletion[]
 }
 
 export type EditModalTarget =
@@ -212,3 +280,4 @@ export type EditModalTarget =
   | { type: 'skill'; record: SkillEntry }
   | { type: 'donation'; record: DonationEntry }
   | { type: 'water'; record: WaterEntry }
+  | { type: 'habit'; record: Habit }

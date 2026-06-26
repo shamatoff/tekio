@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAppStore } from '../../store/app'
 import { usePrefs } from '../../store/prefs'
-import { cycleInfo, getGrouped, weekKey, today, currentStreak } from '../../lib/utils'
+import { cycleInfo, getGrouped, weekKey, today, currentStreak, habitProgress } from '../../lib/utils'
+import type { HabitProgressContext } from '../../lib/utils'
 import { CYCLE, WATER_GOAL_ML } from '../../constants/app'
 import { Card, SecTitle } from '../ui/Card'
 import { Chip } from '../ui/Chip'
@@ -101,7 +102,8 @@ function StatBox({
 const WATER_PILLS = [100, 200, 300, 400, 500]
 
 export function HomeTab({ setTab }: HomeTabProps) {
-  const { weights, bodyweight, cardio, mobility, skills, donations, water, addWaterEntry, setToast, programs } = useAppStore()
+  const { weights, bodyweight, cardio, mobility, skills, donations, water, addWaterEntry, setToast, programs,
+    habits, habitCompletions, exerciseMuscles, muscleGroups, exerciseNames, completeHabit } = useAppStore()
   const { sections, weekStartDay } = usePrefs()
 
   const homeOn = (key: string) => {
@@ -196,6 +198,15 @@ export function HomeTab({ setTab }: HomeTabProps) {
     : null
   const donDaysLeftDisplay = Math.round(useCountUp(donDaysLeft ?? 0))
 
+  // Today's habits (daily cadence)
+  const habitCtx: HabitProgressContext = {
+    weights, mobility, water, cardio, habitCompletions, exerciseMuscles, muscleGroups, exerciseNames,
+  }
+  const dailyHabits = habits
+    .filter(h => h.active && h.cadence === 'daily')
+    .map(h => ({ habit: h, progress: habitProgress(h, habitCtx, today(), weekStartDay) }))
+  const habitsDone = dailyHabits.filter(d => d.progress.done).length
+
   const statsGridAll = [
     { label: 'Lifts',    value: liftWeek,                          decimals: 0, emoji: '🏋️', tab: 'Weights',     sectionKey: 'Weights' },
     { label: 'Cardio',   value: cardioWeek,                        decimals: 0, emoji: '❤️', tab: 'Cardio',      sectionKey: 'Cardio' },
@@ -251,6 +262,49 @@ export function HomeTab({ setTab }: HomeTabProps) {
 
       {/* Optional home cards — sorted & gated by prefs */}
       {[
+        {
+          key: 'Habits',
+          order: sectionOrder['Habits'] ?? 7,
+          show: homeOn('Habits') && dailyHabits.length > 0,
+          node: (
+            <Card>
+              <div className="flex items-center justify-between mb-2">
+                <SecTitle className="mb-0">✅ Today's Habits</SecTitle>
+                <span className="text-xs font-semibold text-muted">{habitsDone}/{dailyHabits.length} done</span>
+              </div>
+              <div className="flex flex-col gap-2">
+                {dailyHabits.map(({ habit, progress }) => {
+                  const pct = Math.min(100, Math.round((progress.current / progress.target) * 100))
+                  const manual = habit.autoSource === 'none'
+                  const isCheck = manual && habit.targetCount <= 1
+                  return (
+                    <div key={habit.id} className="flex items-center gap-2.5">
+                      <span className="text-base w-5 text-center shrink-0">{habit.icon || '✅'}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-primary truncate">{habit.name}</p>
+                        <div className="h-1.5 bg-bg rounded-full overflow-hidden mt-1">
+                          <div className={`h-full rounded-full ${progress.done ? 'bg-success' : 'bg-accent'}`} style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                      {manual ? (
+                        <button
+                          onClick={() => completeHabit(habit.id, isCheck ? (progress.done ? 0 : habit.targetCount) : progress.current + 1)}
+                          className={`px-2 py-1 rounded-lg text-[11px] font-semibold border shrink-0 transition-colors ${
+                            progress.done ? 'border-success bg-success/10 text-success' : 'border-accent bg-accent-l text-accent active:scale-95'
+                          }`}
+                        >
+                          {isCheck ? (progress.done ? '✓' : 'Done') : '+1'}
+                        </button>
+                      ) : (
+                        <span className={`text-[10px] font-semibold shrink-0 ${progress.done ? 'text-success' : 'text-muted'}`}>{progress.done ? '✓' : `${Math.round(progress.current)}/${Math.round(progress.target)}`}</span>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </Card>
+          ),
+        },
         {
           key: 'Skills',
           order: sectionOrder['Skills'] ?? 4,
