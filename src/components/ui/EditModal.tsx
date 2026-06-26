@@ -8,6 +8,7 @@ import { Inp, SelEl } from './Input'
 import { Btn, DelBtn } from './Button'
 import { SmartInput } from './SmartInput'
 import { ChipListInput } from './ChipListInput'
+import { HabitForm } from '../tabs/habits/HabitForm'
 import { CARDIO_TYPES, DONATION_TYPES } from '../../constants/app'
 import type {
   WeightEntry,
@@ -600,6 +601,7 @@ const TITLES: Record<string, string> = {
   skill: 'Edit Skill Session',
   donation: 'Edit Donation',
   water: 'Edit Water Entry',
+  habit: 'Edit Habit',
 }
 
 /**
@@ -642,6 +644,9 @@ export function EditModal() {
       )}
       {editModal?.type === 'water' && (
         <WaterForm record={editModal.record} onClose={closeEditModal} saveRef={saveRef} />
+      )}
+      {editModal?.type === 'habit' && (
+        <HabitForm record={editModal.record} onDone={closeEditModal} saveRef={saveRef} />
       )}
     </Modal>
   )

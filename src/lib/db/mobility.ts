@@ -1,16 +1,7 @@
 import { supabase } from '../supabase'
 import { USER_ID } from '../../constants/app'
 import { getOrCreateExercise } from './program'
-import type { MobilityEntry, MuscleGroup } from '../../types'
-
-export async function loadMuscleGroups(): Promise<MuscleGroup[]> {
-  const { data, error } = await supabase
-    .from('muscle_groups')
-    .select('id, name, body_region')
-    .order('name')
-  if (error) throw error
-  return (data ?? []).map(g => ({ id: g.id, name: g.name, bodyRegion: g.body_region }))
-}
+import type { MobilityEntry } from '../../types'
 
 /** Map of exercise_id → its muscle-group names (canonical, shared across sessions). */
 async function loadExerciseMuscleMap(): Promise<Map<string, string[]>> {

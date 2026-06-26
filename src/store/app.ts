@@ -10,9 +10,13 @@ import type {
   DonationEntry,
   WaterEntry,
   Program,
+  Habit,
   EditModalTarget,
 } from '../types'
 import { getOrCreateUser } from '../lib/db/user'
+import { loadMuscleGroups, loadExerciseMuscleLinks, loadExercises } from '../lib/db/muscles'
+import { loadHabits, loadHabitCompletions, saveHabit, updateHabit, deleteHabit, upsertHabitCompletion } from '../lib/db/habits'
+import { habitPeriodStart } from '../lib/utils'
 import {
   loadWeights,
   saveWeightEntry,
@@ -34,7 +38,7 @@ import {
 import { startOfWeek, today } from '../lib/utils'
 import { loadBodyweight, saveBodyweightEntry, deleteBodyweightEntry, updateBodyweightEntry } from '../lib/db/bodyweight'
 import { loadCardio, saveCardioEntry, deleteCardioEntry, updateCardioEntry } from '../lib/db/cardio'
-import { loadMobility, loadMuscleGroups, saveMobilityEntry, deleteMobilityEntry, updateMobilityEntry } from '../lib/db/mobility'
+import { loadMobility, saveMobilityEntry, deleteMobilityEntry, updateMobilityEntry } from '../lib/db/mobility'
 import { loadSkills, loadSkillTypes, saveSkillEntry, deleteSkillEntry, updateSkillEntry } from '../lib/db/skills'
 import { loadDonations, saveDonationEntry, deleteDonationEntry, updateDonationEntry } from '../lib/db/donations'
 import { loadWater, saveWaterEntry, deleteWaterEntry, updateWaterEntry } from '../lib/db/water'
@@ -105,6 +109,15 @@ interface AppStore extends AppState {
   addWaterEntry: (entry: Omit<WaterEntry, 'id'>) => Promise<void>
   removeWaterEntry: (id: string) => Promise<void>
   editWaterEntry: (id: string, patch: Omit<WaterEntry, 'id'>) => Promise<void>
+
+  // Habits
+  /** exercise id → name, for resolving exercise-linked habits. */
+  exerciseNames: Record<string, string>
+  addHabit: (habit: Omit<Habit, 'id'>) => Promise<void>
+  editHabit: (id: string, patch: Omit<Habit, 'id'>) => Promise<void>
+  removeHabit: (id: string) => Promise<void>
+  /** Manual completion: set this period's count to `amount` (default = target → mark done). */
+  completeHabit: (id: string, amount?: number) => Promise<void>
 }
 
 /** Muscle-group tags are canonical per exercise name, so propagate freshly-saved
@@ -137,6 +150,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
   programHistory: [],
   weekOverrides: [],
   muscleGroups: [],
+  exerciseMuscles: [],
+  habits: [],
+  habitCompletions: [],
+  exerciseNames: {},
   loading: true,
   toast: '',
   editModal: null,
@@ -164,7 +181,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({ loading: true })
     try {
       await getOrCreateUser()
-      const [weights, activePrograms, programHistory, weekOverrides, bodyweight, cardio, mobility, muscleGroups, skills, skillTypes, donations, water] = await Promise.all([
+      const [weights, activePrograms, programHistory, weekOverrides, bodyweight, cardio, mobility, muscleGroups, exerciseMuscles, exercises, habits, habitCompletions, skills, skillTypes, donations, water] = await Promise.all([
         loadWeights(),
         loadActivePrograms(),
         loadProgramCycles(),
@@ -173,6 +190,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
         loadCardio(),
         loadMobility(),
         loadMuscleGroups(),
+        loadExerciseMuscleLinks(),
+        loadExercises(),
+        loadHabits(),
+        loadHabitCompletions(),
         loadSkills(),
         loadSkillTypes(),
         loadDonations(),
@@ -185,6 +206,10 @@ export const useAppStore = create<AppStore>((set, get) => ({
         cardio,
         mobility,
         muscleGroups,
+        exerciseMuscles,
+        exerciseNames: Object.fromEntries(exercises.map(e => [e.id, e.name])),
+        habits,
+        habitCompletions,
         skills,
         skillTypes,
         donations,
@@ -389,5 +414,35 @@ export const useAppStore = create<AppStore>((set, get) => ({
   editWaterEntry: async (id, patch) => {
     await updateWaterEntry(id, patch)
     set(s => ({ water: s.water.map(w => (w.id === id ? { ...w, ...patch } : w)) }))
+  },
+
+  // ── Habits ───────────────────────────────────────────────────────────────────
+  addHabit: async (habit) => {
+    const saved = await saveHabit(habit)
+    set(s => ({ habits: [...s.habits, saved].sort((a, b) => a.sortOrder - b.sortOrder) }))
+  },
+  editHabit: async (id, patch) => {
+    await updateHabit(id, patch)
+    set(s => ({ habits: s.habits.map(h => (h.id === id ? { ...h, id, ...patch } : h)) }))
+  },
+  removeHabit: async (id) => {
+    await deleteHabit(id)
+    set(s => ({
+      habits: s.habits.filter(h => h.id !== id),
+      habitCompletions: s.habitCompletions.filter(c => c.habitId !== id),
+    }))
+  },
+  completeHabit: async (id, amount) => {
+    const habit = get().habits.find(h => h.id === id)
+    if (!habit) return
+    const periodStart = habitPeriodStart(habit.cadence, today(), usePrefs.getState().weekStartDay)
+    const count = amount ?? habit.targetCount
+    const saved = await upsertHabitCompletion(id, periodStart, count)
+    set(s => ({
+      habitCompletions: [
+        ...s.habitCompletions.filter(c => !(c.habitId === id && c.periodStart === periodStart)),
+        saved,
+      ],
+    }))
   },
 }))

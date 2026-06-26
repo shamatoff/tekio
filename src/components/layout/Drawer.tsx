@@ -8,6 +8,7 @@ const NAV_META: Record<string, { icon: string; label: string }> = {
   Skills:       { icon: '🎯', label: 'Skills' },
   Donations:    { icon: '🩸', label: 'Donations' },
   Water:        { icon: '💧', label: 'Water' },
+  Habits:       { icon: '✅', label: 'Habits' },
 }
 
 interface DrawerProps {
