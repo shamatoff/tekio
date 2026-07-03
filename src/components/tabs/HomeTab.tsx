@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { useAppStore } from '../../store/app'
 import { usePrefs } from '../../store/prefs'
 import { cycleInfo, getGrouped, weekKey, today, currentStreak, habitProgress } from '../../lib/utils'
 import type { HabitProgressContext } from '../../lib/utils'
 import { CYCLE, WATER_GOAL_ML } from '../../constants/app'
-import { Card, SecTitle } from '../ui/Card'
+import { Card } from '../ui/Card'
 import { Chip } from '../ui/Chip'
 import { MiniChart } from '../ui/MiniChart'
 import { useCountUp } from '../../hooks/useCountUp'
@@ -96,6 +97,23 @@ function StatBox({
       <div className="text-base font-bold text-primary">{value == null ? '–' : display.toFixed(decimals)}</div>
       <div className="text-[10px] text-muted font-medium">{label}</div>
     </button>
+  )
+}
+
+/** Card header whose title doubles as an entrance to the corresponding section. */
+function CardHeader({ title, onOpen, right }: { title: ReactNode; onOpen: () => void; right?: ReactNode }) {
+  return (
+    <div className="flex items-center justify-between mb-2">
+      <button
+        onClick={onOpen}
+        className="flex items-center gap-1 group active:scale-[0.97] transition-transform"
+        aria-label="Open section"
+      >
+        <span className="text-xs font-semibold text-muted uppercase tracking-wide group-hover:text-accent transition-colors">{title}</span>
+        <span aria-hidden className="text-muted group-hover:text-accent transition-colors text-sm leading-none">›</span>
+      </button>
+      {right}
+    </div>
   )
 }
 
@@ -268,10 +286,11 @@ export function HomeTab({ setTab }: HomeTabProps) {
           show: homeOn('Habits') && dailyHabits.length > 0,
           node: (
             <Card>
-              <div className="flex items-center justify-between mb-2">
-                <SecTitle className="mb-0">✅ Today's Habits</SecTitle>
-                <span className="text-xs font-semibold text-muted">{habitsDone}/{dailyHabits.length} done</span>
-              </div>
+              <CardHeader
+                title="✅ Today's Habits"
+                onOpen={() => setTab('Habits')}
+                right={<span className="text-xs font-semibold text-muted">{habitsDone}/{dailyHabits.length} done</span>}
+              />
               <div className="flex flex-col gap-2">
                 {dailyHabits.map(({ habit, progress }) => {
                   const pct = Math.min(100, Math.round((progress.current / progress.target) * 100))
@@ -311,7 +330,7 @@ export function HomeTab({ setTab }: HomeTabProps) {
           show: homeOn('Skills') && Object.entries(skillWeekMap).length > 0,
           node: (
             <Card>
-              <SecTitle>Skills This Week</SecTitle>
+              <CardHeader title="🎯 Skills This Week" onOpen={() => setTab('Skills')} />
               <div className="flex flex-wrap gap-2">
                 {Object.entries(skillWeekMap).map(([sk, count]) => (
                   <button
@@ -331,11 +350,20 @@ export function HomeTab({ setTab }: HomeTabProps) {
           order: sectionOrder['Donations'] ?? 5,
           show: homeOn('Donations') && donDaysLeft !== null,
           node: (
-            <Card className={donDaysLeft !== null && donDaysLeft <= 0 ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}>
-              <p className="text-xs text-muted mb-0.5">🩸 Next Full Blood Donation</p>
-              <p className={`text-base font-bold ${donDaysLeft !== null && donDaysLeft <= 0 ? 'text-success' : 'text-warning'}`}>
-                {donDaysLeft !== null && donDaysLeft <= 0 ? '✅ Eligible now' : `In ${donDaysLeftDisplay} days (${nextDonDate})`}
-              </p>
+            <Card
+              onClick={() => setTab('Donations')}
+              role="button"
+              className={`cursor-pointer active:scale-[0.98] transition-transform ${donDaysLeft !== null && donDaysLeft <= 0 ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'}`}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted mb-0.5">🩸 Next Full Blood Donation</p>
+                  <p className={`text-base font-bold ${donDaysLeft !== null && donDaysLeft <= 0 ? 'text-success' : 'text-warning'}`}>
+                    {donDaysLeft !== null && donDaysLeft <= 0 ? '✅ Eligible now' : `In ${donDaysLeftDisplay} days (${nextDonDate})`}
+                  </p>
+                </div>
+                <span aria-hidden className="text-muted text-sm leading-none shrink-0">›</span>
+              </div>
             </Card>
           ),
         },
@@ -345,14 +373,15 @@ export function HomeTab({ setTab }: HomeTabProps) {
           show: homeOn('Body Weight'),
           node: (
             <Card>
-              <div className="flex items-center justify-between mb-2">
-                <SecTitle className="mb-0">⚖️ Body Weight</SecTitle>
-                {bwDiff != null && (
+              <CardHeader
+                title="⚖️ Body Weight"
+                onOpen={() => setTab('Body Weight')}
+                right={bwDiff != null && (
                   <span className={`text-xs font-bold ${bwDiff === 0 ? 'text-muted' : bwDiff > 0 ? 'text-danger' : 'text-success'}`}>
                     {bwDiff > 0 ? `+${bwDiff}` : bwDiff} kg
                   </span>
                 )}
-              </div>
+              />
               {latestBw && (
                 <p className="text-xl font-bold text-primary mb-2">
                   {latestBwDisplay.toFixed(1)} <span className="text-sm text-muted font-normal">kg</span>
@@ -372,14 +401,15 @@ export function HomeTab({ setTab }: HomeTabProps) {
           show: homeOn('Weights'),
           node: (
             <Card>
-              <div className="flex items-center justify-between mb-2">
-                <SecTitle className="mb-0">🏋️ Lifting</SecTitle>
-                {liftDiff != null && (
+              <CardHeader
+                title="🏋️ Lifting"
+                onOpen={() => setTab('Weights')}
+                right={liftDiff != null && (
                   <span className={`text-xs font-bold ${liftDiff === 0 ? 'text-muted' : liftDiff > 0 ? 'text-success' : 'text-danger'}`}>
                     {liftDiff > 0 ? `+${liftDiff}` : liftDiff} kg
                   </span>
                 )}
-              </div>
+              />
               {topExercises.length > 1 && (
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   {topExercises.map(ex => (
@@ -416,7 +446,7 @@ export function HomeTab({ setTab }: HomeTabProps) {
           show: homeOn('Cardio') && cardioChart.length >= 2,
           node: (
             <Card>
-              <SecTitle>Cardio</SecTitle>
+              <CardHeader title="❤️ Cardio" onOpen={() => setTab('Cardio')} />
               <MiniChart data={cardioChart} color="#10b981" />
             </Card>
           ),
@@ -427,10 +457,11 @@ export function HomeTab({ setTab }: HomeTabProps) {
           show: homeOn('Water'),
           node: (
             <Card className={showGoalPulse ? 'animate-pop' : ''}>
-              <div className="flex items-center justify-between mb-2">
-                <SecTitle className="mb-0">💧 Water</SecTitle>
-                <span className="text-xs font-semibold text-muted">{waterPct}% of goal</span>
-              </div>
+              <CardHeader
+                title="💧 Water"
+                onOpen={() => setTab('Water')}
+                right={<span className="text-xs font-semibold text-muted">{waterPct}% of goal</span>}
+              />
               <p className="text-xl font-bold text-primary mb-2 flex items-center gap-1.5">
                 <span className="text-lg">🥤</span>
                 {todayWaterDisplay} <span className="text-sm text-muted font-normal">/ {WATER_GOAL_ML} ml</span>
