@@ -48,7 +48,9 @@ function HabitRow({ habit, ctx, weekStart }: { habit: Habit; ctx: HabitProgressC
             />
           </div>
           <span className="text-[11px] text-muted font-medium shrink-0 tabular-nums">
-            {fmt(p.current)}/{fmt(p.target)}{habit.unit ? ` ${habit.unit}` : ''}
+            {isCheck
+              ? (habit.targetCount > 1 ? `${fmt(habit.targetCount)}${habit.unit ? ` ${habit.unit}` : ''}` : '')
+              : `${fmt(p.current)}/${fmt(p.target)}${habit.unit ? ` ${habit.unit}` : ''}`}
           </span>
         </div>
       </div>
