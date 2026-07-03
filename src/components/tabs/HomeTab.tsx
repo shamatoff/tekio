@@ -121,7 +121,7 @@ const WATER_PILLS = [100, 200, 300, 400, 500]
 
 export function HomeTab({ setTab }: HomeTabProps) {
   const { weights, bodyweight, cardio, mobility, skills, donations, water, addWaterEntry, setToast, programs,
-    habits, habitCompletions, exerciseMuscles, muscleGroups, exerciseNames, completeHabit } = useAppStore()
+    habits, habitCompletions, exerciseMuscles, muscleGroups, exerciseNames } = useAppStore()
   const { sections, weekStartDay } = usePrefs()
 
   const homeOn = (key: string) => {
@@ -216,14 +216,16 @@ export function HomeTab({ setTab }: HomeTabProps) {
     : null
   const donDaysLeftDisplay = Math.round(useCountUp(donDaysLeft ?? 0))
 
-  // Today's habits (daily cadence)
+  // Habit trackers, summarised per cadence (done / total active habits)
   const habitCtx: HabitProgressContext = {
     weights, mobility, water, cardio, habitCompletions, exerciseMuscles, muscleGroups, exerciseNames,
   }
-  const dailyHabits = habits
-    .filter(h => h.active && h.cadence === 'daily')
-    .map(h => ({ habit: h, progress: habitProgress(h, habitCtx, today(), weekStartDay) }))
-  const habitsDone = dailyHabits.filter(d => d.progress.done).length
+  const habitSummary = (['daily', 'weekly', 'monthly'] as const).map(cadence => {
+    const list = habits.filter(h => h.active && h.cadence === cadence)
+    const done = list.filter(h => habitProgress(h, habitCtx, today(), weekStartDay).done).length
+    return { cadence, label: cadence[0].toUpperCase() + cadence.slice(1), total: list.length, done }
+  })
+  const totalHabits = habitSummary.reduce((s, c) => s + c.total, 0)
 
   const statsGridAll = [
     { label: 'Lifts',    value: liftWeek,                          decimals: 0, emoji: '🏋️', tab: 'Weights',     sectionKey: 'Weights' },
@@ -283,41 +285,24 @@ export function HomeTab({ setTab }: HomeTabProps) {
         {
           key: 'Habits',
           order: sectionOrder['Habits'] ?? 7,
-          show: homeOn('Habits') && dailyHabits.length > 0,
+          show: homeOn('Habits') && totalHabits > 0,
           node: (
             <Card>
-              <CardHeader
-                title="✅ Today's Habits"
-                onOpen={() => setTab('Habits')}
-                right={<span className="text-xs font-semibold text-muted">{habitsDone}/{dailyHabits.length} done</span>}
-              />
-              <div className="flex flex-col gap-2">
-                {dailyHabits.map(({ habit, progress }) => {
-                  const pct = Math.min(100, Math.round((progress.current / progress.target) * 100))
-                  const manual = habit.autoSource === 'none'
-                  const isCheck = manual && habit.targetCount <= 1
+              <CardHeader title="✅ Habits" onOpen={() => setTab('Habits')} />
+              <div className="grid grid-cols-3 gap-2">
+                {habitSummary.map(c => {
+                  const allDone = c.total > 0 && c.done === c.total
                   return (
-                    <div key={habit.id} className="flex items-center gap-2.5">
-                      <span className="text-base w-5 text-center shrink-0">{habit.icon || '✅'}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-primary truncate">{habit.name}</p>
-                        <div className="h-1.5 bg-bg rounded-full overflow-hidden mt-1">
-                          <div className={`h-full rounded-full ${progress.done ? 'bg-success' : 'bg-accent'}`} style={{ width: `${pct}%` }} />
-                        </div>
+                    <button
+                      key={c.cadence}
+                      onClick={() => setTab('Habits')}
+                      className="bg-bg rounded-xl py-2.5 px-1 text-center active:scale-[0.95] transition-transform"
+                    >
+                      <div className="text-[10px] text-muted font-medium uppercase tracking-wide mb-0.5">{c.label}</div>
+                      <div className={`text-base font-bold tabular-nums ${allDone ? 'text-success' : 'text-primary'}`}>
+                        {c.total === 0 ? '–' : `${c.done}/${c.total}`}
                       </div>
-                      {manual ? (
-                        <button
-                          onClick={() => completeHabit(habit.id, isCheck ? (progress.done ? 0 : habit.targetCount) : progress.current + 1)}
-                          className={`px-2 py-1 rounded-lg text-[11px] font-semibold border shrink-0 transition-colors ${
-                            progress.done ? 'border-success bg-success/10 text-success' : 'border-accent bg-accent-l text-accent active:scale-95'
-                          }`}
-                        >
-                          {isCheck ? (progress.done ? '✓' : 'Done') : '+1'}
-                        </button>
-                      ) : (
-                        <span className={`text-[10px] font-semibold shrink-0 ${progress.done ? 'text-success' : 'text-muted'}`}>{progress.done ? '✓' : `${Math.round(progress.current)}/${Math.round(progress.target)}`}</span>
-                      )}
-                    </div>
+                    </button>
                   )
                 })}
               </div>
