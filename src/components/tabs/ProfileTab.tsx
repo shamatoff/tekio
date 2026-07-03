@@ -16,6 +16,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { usePrefs } from '../../store/prefs'
 import { SecTitle } from '../ui/Card'
+import { AssistantSettings } from './AssistantSettings'
 import type { SectionConfig } from '../../lib/db/sectionConfig'
 
 const SECTION_META: Record<string, { icon: string; label: string }> = {
@@ -159,6 +160,8 @@ export function ProfileTab() {
           </div>
         </div>
       </div>
+
+      <AssistantSettings />
 
       <div>
         <SecTitle>Sections</SecTitle>

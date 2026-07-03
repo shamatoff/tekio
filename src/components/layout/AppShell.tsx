@@ -8,6 +8,7 @@ import { Drawer } from './Drawer'
 import { BottomNav } from './BottomNav'
 import { ImportPane } from './ImportPane'
 import { ExportPane } from './ExportPane'
+import { AssistantFab } from '../assistant/AssistantFab'
 
 const TAB_TITLES: Record<string, string> = {
   Home: 'Tekiō',
@@ -101,6 +102,8 @@ export function AppShell({ tab, setTab, children }: AppShellProps) {
       <main className="max-w-[600px] mx-auto px-4 py-4 pb-24">
         {children}
       </main>
+
+      <AssistantFab hidden={inputFocused} />
 
       <BottomNav tab={tab} setTab={setTab} onMore={() => setDrawerOpen(true)} hidden={inputFocused} />
     </div>

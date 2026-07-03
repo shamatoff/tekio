@@ -108,3 +108,18 @@ export async function createExercise(name: string): Promise<{ id: string; name: 
   if (error) throw error
   return { id: data.id, name: data.name }
 }
+
+/** Create a new muscle group and return its id + name. */
+export async function createMuscleGroup(
+  name: string,
+  bodyRegion: BodyRegion,
+  parentId?: string | null,
+): Promise<{ id: string; name: string }> {
+  const { data, error } = await supabase
+    .from('muscle_groups')
+    .insert({ name: name.trim(), body_region: bodyRegion, parent_id: parentId ?? null })
+    .select('id, name')
+    .single()
+  if (error) throw error
+  return { id: data.id, name: data.name }
+}
