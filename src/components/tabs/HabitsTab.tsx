@@ -171,12 +171,14 @@ export function HabitsTab() {
   const { habits, weights, mobility, water, cardio, habitCompletions, exerciseMuscles, muscleGroups, exerciseNames } = useAppStore()
   const { weekStartDay } = usePrefs()
   const [showForm, setShowForm] = useState(false)
+  const [cadence, setCadence] = useState<HabitCadence>('daily')
 
   const ctx: HabitProgressContext = {
     weights, mobility, water, cardio, habitCompletions, exerciseMuscles, muscleGroups, exerciseNames,
   }
 
   const byCadence = (c: HabitCadence) => habits.filter(h => h.active && h.cadence === c)
+  const shown = byCadence(cadence)
 
   return (
     <div className="flex flex-col gap-4">
@@ -197,18 +199,33 @@ export function HabitsTab() {
       {habits.length === 0 ? (
         <Card><EmptyMsg>No habits yet — add one to start building a routine.</EmptyMsg></Card>
       ) : (
-        CADENCE_ORDER.map(c => {
-          const list = byCadence(c)
-          if (list.length === 0) return null
-          return (
-            <Card key={c}>
-              <SecTitle>{CADENCE_LABEL[c]}</SecTitle>
-              {list.map(h => (
-                <HabitRow key={h.id} habit={h} ctx={ctx} weekStart={weekStartDay} />
-              ))}
-            </Card>
-          )
-        })
+        <Card>
+          <div className="flex gap-1.5 mb-3">
+            {CADENCE_ORDER.map(c => {
+              const count = byCadence(c).length
+              const active = c === cadence
+              return (
+                <button
+                  key={c}
+                  onClick={() => setCadence(c)}
+                  className={`flex-1 py-2 rounded-lg text-xs font-semibold border transition-colors ${
+                    active ? 'border-accent bg-accent-l text-accent' : 'border-border bg-surface text-muted'
+                  }`}
+                >
+                  {CADENCE_LABEL[c]}
+                  {count > 0 && <span className="ml-1 opacity-60">{count}</span>}
+                </button>
+              )
+            })}
+          </div>
+          {shown.length === 0 ? (
+            <EmptyMsg>No {CADENCE_LABEL[cadence].toLowerCase()} habits yet.</EmptyMsg>
+          ) : (
+            shown.map(h => (
+              <HabitRow key={h.id} habit={h} ctx={ctx} weekStart={weekStartDay} />
+            ))
+          )}
+        </Card>
       )}
 
       <MuscleCoverageCard />
