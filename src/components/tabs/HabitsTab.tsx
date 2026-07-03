@@ -7,6 +7,7 @@ import type { Habit, HabitCadence } from '../../types'
 import { Card, SecTitle, EmptyMsg } from '../ui/Card'
 import { Btn, DelBtn, EditBtn } from '../ui/Button'
 import { HabitForm } from './habits/HabitForm'
+import { ExerciseMuscleEditor } from './habits/ExerciseMuscleEditor'
 
 const CADENCE_ORDER: HabitCadence[] = ['daily', 'weekly', 'monthly']
 const CADENCE_LABEL: Record<HabitCadence, string> = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly' }
@@ -22,7 +23,7 @@ function HabitRow({ habit, ctx, weekStart }: { habit: Habit; ctx: HabitProgressC
   const p = habitProgress(habit, ctx, today(), weekStart)
   const pct = Math.min(100, Math.round((p.current / p.target) * 100))
   const manual = habit.autoSource === 'none'
-  const isCheck = manual && habit.targetCount <= 1
+  const isCheck = manual && (habit.singleTick || habit.targetCount <= 1)
 
   const onComplete = async () => {
     try {
@@ -157,6 +158,7 @@ function MuscleCoverageCard() {
           )
         })}
       </div>
+      <ExerciseMuscleEditor />
     </Card>
   )
 }

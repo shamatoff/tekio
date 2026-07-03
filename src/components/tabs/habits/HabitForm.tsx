@@ -49,6 +49,7 @@ export function HabitForm({ record, onDone, saveRef }: HabitFormProps) {
   )
   const [countLevel, setCountLevel] = useState<1 | 2 | 3>(record?.countLevel ?? 1)
   const [contribution, setContribution] = useState<MuscleContribution>(record?.contribution ?? 'stimulus')
+  const [singleTick, setSingleTick] = useState(record?.singleTick ?? true)
   const [notes, setNotes] = useState(record?.notes ?? '')
 
   const sources = autoSourceOptions(linkType)
@@ -84,6 +85,7 @@ export function HabitForm({ record, onDone, saveRef }: HabitFormProps) {
       autoSource,
       countLevel,
       contribution,
+      singleTick,
       active: true,
       sortOrder: record?.sortOrder ?? habits.length,
       notes: notes.trim() || null,
@@ -106,6 +108,7 @@ export function HabitForm({ record, onDone, saveRef }: HabitFormProps) {
 
   const showMuscleControls = linkType === 'muscle'
   const showCountLevel = sourceNeedsLink(autoSource) && autoSource === 'weight_sets' && linkType !== 'none'
+  const isManual = autoSource === 'none'
 
   return (
     <div className="flex flex-col gap-3">
@@ -158,6 +161,18 @@ export function HabitForm({ record, onDone, saveRef }: HabitFormProps) {
         onChange={e => onSourceChange(e.target.value as HabitAutoSource)}
         options={sources.map(s => ({ value: s, label: AUTO_SOURCE_LABEL[s] }))}
       />
+
+      {isManual && (
+        <SelEl
+          label="Completion"
+          value={singleTick ? 'single' : 'counter'}
+          onChange={e => setSingleTick(e.target.value === 'single')}
+          options={[
+            { value: 'single', label: 'Single tick (done in one tap)' },
+            { value: 'counter', label: 'Counter (+1 per rep/set)' },
+          ]}
+        />
+      )}
 
       <div className="grid grid-cols-2 gap-2.5">
         {showCountLevel && (

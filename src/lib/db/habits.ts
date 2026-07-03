@@ -3,7 +3,7 @@ import { USER_ID } from '../../constants/app'
 import type { Habit, HabitCompletion } from '../../types'
 
 const HABIT_COLS =
-  'id, name, icon, cadence, target_count, unit, muscle_group_id, exercise_id, auto_source, count_level, contribution, active, sort_order, notes'
+  'id, name, icon, cadence, target_count, unit, muscle_group_id, exercise_id, auto_source, count_level, contribution, single_tick, active, sort_order, notes'
 
 type HabitRow = {
   id: string
@@ -17,6 +17,7 @@ type HabitRow = {
   auto_source: Habit['autoSource']
   count_level: number
   contribution: Habit['contribution']
+  single_tick: boolean
   active: boolean
   sort_order: number
   notes: string | null
@@ -35,6 +36,7 @@ function fromRow(r: HabitRow): Habit {
     autoSource: r.auto_source,
     countLevel: (r.count_level ?? 1) as 1 | 2 | 3,
     contribution: r.contribution,
+    singleTick: r.single_tick ?? true,
     active: r.active,
     sortOrder: r.sort_order,
     notes: r.notes,
@@ -54,6 +56,7 @@ function toRow(h: Omit<Habit, 'id'>) {
     auto_source: h.autoSource,
     count_level: h.countLevel,
     contribution: h.contribution,
+    single_tick: h.singleTick,
     active: h.active,
     sort_order: h.sortOrder,
     notes: h.notes ?? null,

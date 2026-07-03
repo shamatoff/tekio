@@ -118,6 +118,9 @@ interface AppStore extends AppState {
   removeHabit: (id: string) => Promise<void>
   /** Manual completion: set this period's count to `amount` (default = target → mark done). */
   completeHabit: (id: string, amount?: number) => Promise<void>
+
+  /** Refresh muscle groups, exercise→muscle links and exercise names (after mapping edits). */
+  reloadMuscleData: () => Promise<void>
 }
 
 /** Muscle-group tags are canonical per exercise name, so propagate freshly-saved
@@ -444,5 +447,18 @@ export const useAppStore = create<AppStore>((set, get) => ({
         saved,
       ],
     }))
+  },
+
+  reloadMuscleData: async () => {
+    const [muscleGroups, exerciseMuscles, exercises] = await Promise.all([
+      loadMuscleGroups(),
+      loadExerciseMuscleLinks(),
+      loadExercises(),
+    ])
+    set({
+      muscleGroups,
+      exerciseMuscles,
+      exerciseNames: Object.fromEntries(exercises.map(e => [e.id, e.name])),
+    })
   },
 }))

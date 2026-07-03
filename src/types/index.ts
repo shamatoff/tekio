@@ -231,6 +231,8 @@ export interface Habit {
   /** For muscle auto-count: include exercise links whose level ≤ this. */
   countLevel: 1 | 2 | 3
   contribution: MuscleContribution
+  /** Manual (autoSource='none') habits only: true = one-tap check-off, false = +1 counter. */
+  singleTick: boolean
   active: boolean
   sortOrder: number
   notes?: string | null

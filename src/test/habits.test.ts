@@ -38,7 +38,7 @@ function baseCtx(over: Partial<HabitProgressContext> = {}): HabitProgressContext
 
 const habit = (over: Partial<Habit>): Habit => ({
   id: 'h1', name: 'Test', cadence: 'weekly', targetCount: 15, unit: 'sets',
-  autoSource: 'none', countLevel: 1, contribution: 'stimulus', active: true, sortOrder: 0,
+  autoSource: 'none', countLevel: 1, contribution: 'stimulus', singleTick: true, active: true, sortOrder: 0,
   ...over,
 })
 
