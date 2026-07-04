@@ -123,25 +123,22 @@ export const useAssistant = create<AssistantStore>((set, get) => ({
       status === 'applied' ? 'Assistant applied changes' : status === 'partial' ? 'Some changes applied' : 'Changes failed',
     )
 
-    // Report results back so the model can give a closing summary.
+    // Build an honest summary from the real results — never let the model claim a
+    // success that didn't happen. Both the chat bubble and the Gemini history use
+    // this text, so any follow-up turn is grounded in what actually occurred.
+    const summary = summarize(results)
     const respParts: GeminiPart[] = msg.proposal.calls.map((c, i) => ({
       functionResponse: { name: c.name, response: { success: results[i].ok, detail: results[i].summary } },
     }))
-    const contents: GeminiContent[] = [...get().contents, { role: 'user', parts: respParts }]
-    set({ contents })
-    try {
-      const resp = await assistantChat(contents, context())
-      if (resp.text) {
-        set(st => ({
-          messages: [...st.messages, { id: uid(), role: 'assistant', text: resp.text }],
-          contents: [...st.contents, { role: 'model', parts: [{ text: resp.text }] }],
-        }))
-      }
-    } catch {
-      // The closing summary is optional; the changes are already applied.
-    } finally {
-      set({ busy: false })
-    }
+    set(st => ({
+      messages: [...st.messages, { id: uid(), role: 'assistant', text: summary }],
+      contents: [
+        ...st.contents,
+        { role: 'user', parts: respParts },
+        { role: 'model', parts: [{ text: summary }] },
+      ],
+      busy: false,
+    }))
   },
 
   cancelProposal: async (messageId) => {
@@ -164,4 +161,13 @@ export const useAssistant = create<AssistantStore>((set, get) => ({
 function errorText(msg: string): string {
   if (msg === 'no_key') return 'No API key set yet. Add your Gemini API key in Profile → Assistant to get started.'
   return `Something went wrong: ${msg}`
+}
+
+/** Honest, deterministic outcome text built from the executor's real results. */
+function summarize(results: ToolResult[]): string {
+  const done = results.filter(r => r.ok).map(r => r.summary)
+  const failed = results.filter(r => !r.ok).map(r => r.summary)
+  if (failed.length === 0) return `Done. ${done.join(' ')}`.trim()
+  if (done.length === 0) return `I couldn't make that change. ${failed.join(' ')}`.trim()
+  return `Partly done — some changes couldn't be applied.\nApplied: ${done.join(' ')}\nNot applied: ${failed.join(' ')}`
 }

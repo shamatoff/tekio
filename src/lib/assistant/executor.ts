@@ -25,6 +25,15 @@ const bool = (a: Args, k: string): boolean | undefined =>
 const clampLevel = (n: number | undefined, dflt: 1 | 2 | 3): 1 | 2 | 3 =>
   (n === 1 || n === 2 || n === 3 ? n : dflt)
 
+// The DB has CHECK constraints on these; the model can emit anything, so
+// whitelist to a valid value (falling back to `dflt`) before writing.
+const CADENCES = ['daily', 'weekly', 'monthly'] as const
+const AUTO_SOURCES = ['none', 'weight_sets', 'mobility_minutes', 'water', 'cardio_sessions'] as const
+const CONTRIBUTIONS = ['stimulus', 'recovery'] as const
+const REGIONS = ['upper', 'lower', 'core', 'full_body'] as const
+const oneOf = <T extends string>(v: string | undefined, allowed: readonly T[], dflt: T): T =>
+  (v !== undefined && (allowed as readonly string[]).includes(v) ? (v as T) : dflt)
+
 const ok = (name: string, summary: string): ToolResult => ({ name, ok: true, summary })
 const fail = (name: string, summary: string): ToolResult => ({ name, ok: false, summary })
 
@@ -156,14 +165,14 @@ export async function executeToolCall(call: ToolCall): Promise<ToolResult> {
         const habit: Omit<Habit, 'id'> = {
           name,
           icon: str(a, 'icon') ?? null,
-          cadence: (str(a, 'cadence') as HabitCadence) ?? 'daily',
+          cadence: oneOf<HabitCadence>(str(a, 'cadence'), CADENCES, 'daily'),
           targetCount: num(a, 'targetCount') ?? 1,
           unit: str(a, 'unit') ?? null,
           muscleGroupId,
           exerciseId,
-          autoSource: (str(a, 'autoSource') as HabitAutoSource) ?? 'none',
+          autoSource: oneOf<HabitAutoSource>(str(a, 'autoSource'), AUTO_SOURCES, 'none'),
           countLevel: clampLevel(num(a, 'countLevel'), 1),
-          contribution: (str(a, 'contribution') as MuscleContribution) ?? 'stimulus',
+          contribution: oneOf<MuscleContribution>(str(a, 'contribution'), CONTRIBUTIONS, 'stimulus'),
           singleTick: bool(a, 'singleTick') ?? true,
           active: true,
           sortOrder: maxSort + 1,
@@ -182,12 +191,12 @@ export async function executeToolCall(call: ToolCall): Promise<ToolResult> {
         const patch: Omit<Habit, 'id'> = { ...rest }
         if (str(a, 'name')) patch.name = str(a, 'name')!
         if (str(a, 'icon')) patch.icon = str(a, 'icon')!
-        if (str(a, 'cadence')) patch.cadence = str(a, 'cadence') as HabitCadence
+        if (str(a, 'cadence')) patch.cadence = oneOf<HabitCadence>(str(a, 'cadence'), CADENCES, habit.cadence)
         if (num(a, 'targetCount') != null) patch.targetCount = num(a, 'targetCount')!
         if (str(a, 'unit')) patch.unit = str(a, 'unit')!
-        if (str(a, 'autoSource')) patch.autoSource = str(a, 'autoSource') as HabitAutoSource
+        if (str(a, 'autoSource')) patch.autoSource = oneOf<HabitAutoSource>(str(a, 'autoSource'), AUTO_SOURCES, habit.autoSource)
         if (num(a, 'countLevel') != null) patch.countLevel = clampLevel(num(a, 'countLevel'), habit.countLevel)
-        if (str(a, 'contribution')) patch.contribution = str(a, 'contribution') as MuscleContribution
+        if (str(a, 'contribution')) patch.contribution = oneOf<MuscleContribution>(str(a, 'contribution'), CONTRIBUTIONS, habit.contribution)
         if (bool(a, 'singleTick') != null) patch.singleTick = bool(a, 'singleTick')!
         if (str(a, 'notes')) patch.notes = str(a, 'notes')!
         if (bool(a, 'active') != null) patch.active = bool(a, 'active')!
@@ -237,7 +246,7 @@ export async function executeToolCall(call: ToolCall): Promise<ToolResult> {
         await upsertExerciseMuscle({
           exerciseId, muscleGroupId,
           level: clampLevel(num(a, 'level'), 1),
-          contribution: (str(a, 'contribution') as MuscleContribution) ?? 'stimulus',
+          contribution: oneOf<MuscleContribution>(str(a, 'contribution'), CONTRIBUTIONS, 'stimulus'),
         })
         await store.reloadMuscleData()
         return ok(call.name, `Mapped ${ex} → ${mg}.`)
@@ -257,6 +266,8 @@ export async function executeToolCall(call: ToolCall): Promise<ToolResult> {
       case 'create_muscle_group': {
         const name = str(a, 'name'); const region = str(a, 'bodyRegion')
         if (!name || !region) return fail(call.name, 'name and bodyRegion are required.')
+        if (!(REGIONS as readonly string[]).includes(region))
+          return fail(call.name, `bodyRegion must be one of ${REGIONS.join(', ')}.`)
         if (muscleIdByName(name)) return ok(call.name, `Muscle group "${name}" already exists.`)
         let parentId: string | null = null
         const parent = str(a, 'parent')
