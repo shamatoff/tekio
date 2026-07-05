@@ -238,24 +238,9 @@ export function OverviewTab({ setTab }: OverviewTabProps) {
   return (
     <div className="flex flex-col gap-4">
       {/* Program hero cards */}
-      {programs.length > 0 ? (
-        programs.map(ap => (
-          <ProgramHeroCard key={ap.userProgramId} ap={ap} setTab={setTab} />
-        ))
-      ) : (
-        <button
-          onClick={() => setTab('Program')}
-          className="text-left w-full border-2 border-dashed border-border bg-surface rounded-2xl p-4 active:scale-[0.98] transition-transform"
-        >
-          <div className="flex items-center gap-3">
-            <span className="text-3xl">📋</span>
-            <div>
-              <p className="text-sm font-bold text-primary mb-0.5">Set up your training program</p>
-              <p className="text-xs text-muted">Get guided sessions with progressive overload targets</p>
-            </div>
-          </div>
-        </button>
-      )}
+      {programs.map(ap => (
+        <ProgramHeroCard key={ap.userProgramId} ap={ap} setTab={setTab} />
+      ))}
 
       {/* Streak */}
       {streak > 0 && (
