@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type {
+  Adaptation,
   AppState,
   WeightEntry,
   BodyweightEntry,
@@ -113,6 +114,8 @@ interface AppStore extends AppState {
   // Habits
   /** exercise id → name, for resolving exercise-linked habits. */
   exerciseNames: Record<string, string>
+  /** exercise name (lowercased) → adaptation override, for the adaptation dashboard. */
+  exerciseAdaptations: Record<string, Adaptation>
   addHabit: (habit: Omit<Habit, 'id'>) => Promise<void>
   editHabit: (id: string, patch: Omit<Habit, 'id'>) => Promise<void>
   removeHabit: (id: string) => Promise<void>
@@ -121,6 +124,13 @@ interface AppStore extends AppState {
 
   /** Refresh muscle groups, exercise→muscle links and exercise names (after mapping edits). */
   reloadMuscleData: () => Promise<void>
+}
+
+/** Build the lowercased exercise-name → adaptation override map from loaded exercises. */
+function adaptationMap(exercises: { name: string; adaptation: Adaptation | null }[]): Record<string, Adaptation> {
+  const out: Record<string, Adaptation> = {}
+  for (const e of exercises) if (e.adaptation) out[e.name.toLowerCase()] = e.adaptation
+  return out
 }
 
 /** Muscle-group tags are canonical per exercise name, so propagate freshly-saved
@@ -157,6 +167,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   habits: [],
   habitCompletions: [],
   exerciseNames: {},
+  exerciseAdaptations: {},
   loading: true,
   toast: '',
   editModal: null,
@@ -211,6 +222,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         muscleGroups,
         exerciseMuscles,
         exerciseNames: Object.fromEntries(exercises.map(e => [e.id, e.name])),
+        exerciseAdaptations: adaptationMap(exercises),
         habits,
         habitCompletions,
         skills,
@@ -459,6 +471,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
       muscleGroups,
       exerciseMuscles,
       exerciseNames: Object.fromEntries(exercises.map(e => [e.id, e.name])),
+      exerciseAdaptations: adaptationMap(exercises),
     })
   },
 }))

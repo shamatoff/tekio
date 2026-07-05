@@ -14,14 +14,14 @@ interface HomeTabProps {
 }
 
 export function HomeTab({ setTab }: HomeTabProps) {
-  const { weights, cardio, skills, exerciseMuscles, muscleGroups } = useAppStore()
+  const { weights, cardio, skills, exerciseMuscles, muscleGroups, exerciseAdaptations } = useAppStore()
   const { weekStartDay } = usePrefs()
   const weekStart = startOfWeek(today(), weekStartDay)
   const [openKey, setOpenKey] = useState<Adaptation | null>(null)
 
   const coverage = useMemo(
-    () => adaptationCoverage({ weights, cardio, skills, exerciseMuscles, muscleGroups, weekStart }),
-    [weights, cardio, skills, exerciseMuscles, muscleGroups, weekStart],
+    () => adaptationCoverage({ weights, cardio, skills, exerciseMuscles, muscleGroups, weekStart, overrides: exerciseAdaptations }),
+    [weights, cardio, skills, exerciseMuscles, muscleGroups, weekStart, exerciseAdaptations],
   )
 
   const total = totalAdaptationVolume(coverage)

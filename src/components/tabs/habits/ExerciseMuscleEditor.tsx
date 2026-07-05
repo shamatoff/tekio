@@ -6,9 +6,11 @@ import { Inp, SelEl } from '../../ui/Input'
 import { muscleOptions } from './habitFields'
 import {
   loadExerciseMuscleRows, upsertExerciseMuscle, deleteExerciseMuscle, createExercise,
+  setExerciseAdaptation,
   type ExerciseMuscleRow,
 } from '../../../lib/db/muscles'
-import type { MuscleContribution } from '../../../types'
+import { ADAPTATIONS } from '../../../constants/adaptations'
+import type { Adaptation, MuscleContribution } from '../../../types'
 
 const LEVEL_OPTS = [
   { value: '1', label: 'L1 · primary' },
@@ -19,11 +21,15 @@ const CONTRIB_OPTS = [
   { value: 'stimulus', label: 'Stimulus' },
   { value: 'recovery', label: 'Recovery' },
 ]
+const ADAPTATION_OPTS = [
+  { value: '', label: 'Auto (by reps)' },
+  ...ADAPTATIONS.map(a => ({ value: a.key, label: `${a.icon} ${a.label}` })),
+]
 
 const rowKey = (r: ExerciseMuscleRow) => `${r.exerciseId}:${r.muscleGroupId}`
 
 export function ExerciseMuscleEditor() {
-  const { exerciseNames, muscleGroups, reloadMuscleData, setToast } = useAppStore()
+  const { exerciseNames, exerciseAdaptations, muscleGroups, reloadMuscleData, setToast } = useAppStore()
 
   const [open, setOpen] = useState(false)
   const [loaded, setLoaded] = useState(false)
@@ -94,6 +100,15 @@ export function ExerciseMuscleEditor() {
     await persist({ exerciseId, muscleGroupId, level: 1, contribution: 'stimulus' })
   }
 
+  const saveAdaptation = async (exerciseId: string, value: string) => {
+    try {
+      await setExerciseAdaptation(exerciseId, (value || null) as Adaptation | null)
+      await reloadMuscleData()
+    } catch {
+      setToast('❌ Failed to save adaptation.')
+    }
+  }
+
   const addExercise = async () => {
     const name = newName.trim()
     if (!name) return
@@ -123,7 +138,8 @@ export function ExerciseMuscleEditor() {
         <div className="mt-3 flex flex-col gap-3">
           <p className="text-[11px] text-muted">
             Each exercise can target multiple muscles — L1 primary, L2/L3 secondary — as stimulus or recovery.
-            Edits update the Muscle Coverage dashboard.
+            Set an <b>Adaptation</b> to always count an exercise toward power/speed/etc. (overrides rep-based
+            classification); leave it on Auto to classify by reps. Edits update the dashboards.
           </p>
 
           <div className="flex items-end gap-2">
@@ -153,6 +169,8 @@ export function ExerciseMuscleEditor() {
                 const isOpen = expanded.has(ex.id)
                 const linkedIds = new Set(links.map(l => l.muscleGroupId))
                 const available = muscleOpts.filter(o => !linkedIds.has(o.value))
+                const adaptation = exerciseAdaptations[ex.name.toLowerCase()]
+                const adaptMeta = adaptation ? ADAPTATIONS.find(a => a.key === adaptation) : null
                 return (
                   <div key={ex.id} className="border border-border rounded-lg overflow-hidden">
                     <button
@@ -161,6 +179,15 @@ export function ExerciseMuscleEditor() {
                     >
                       <span className="text-[10px] text-muted w-3">{isOpen ? '▾' : '▸'}</span>
                       <span className="text-sm font-semibold text-primary flex-1 truncate">{ex.name}</span>
+                      {adaptMeta && (
+                        <span
+                          className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0"
+                          style={{ background: `${adaptMeta.color}1a`, color: adaptMeta.color }}
+                          title={`Always counts as ${adaptMeta.label}`}
+                        >
+                          {adaptMeta.icon} {adaptMeta.label}
+                        </span>
+                      )}
                       <span className="text-[10px] text-muted shrink-0">
                         {links.length === 0 ? 'no muscles' : `${links.length} muscle${links.length > 1 ? 's' : ''}`}
                       </span>
@@ -168,6 +195,15 @@ export function ExerciseMuscleEditor() {
 
                     {isOpen && (
                       <div className="px-3 pb-3 pt-1 flex flex-col gap-2 bg-bg/40">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted flex-1">Adaptation</span>
+                          <SelEl
+                            options={ADAPTATION_OPTS}
+                            value={adaptation ?? ''}
+                            onChange={e => saveAdaptation(ex.id, e.target.value)}
+                            className="!py-1 !px-2 text-xs w-40"
+                          />
+                        </div>
                         {links.map(link => (
                           <div key={link.muscleGroupId} className="flex items-center gap-2">
                             <span className="text-xs text-primary flex-1 truncate">

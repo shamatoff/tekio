@@ -1,6 +1,6 @@
 import { supabase } from '../supabase'
 import { USER_ID } from '../../constants/app'
-import type { BodyRegion, ExerciseMuscleLink, MuscleContribution, MuscleGroup } from '../../types'
+import type { Adaptation, BodyRegion, ExerciseMuscleLink, MuscleContribution, MuscleGroup } from '../../types'
 
 export async function loadMuscleGroups(): Promise<MuscleGroup[]> {
   const { data, error } = await supabase
@@ -16,14 +16,30 @@ export async function loadMuscleGroups(): Promise<MuscleGroup[]> {
   }))
 }
 
-/** All exercises the user can link a habit to (id + name). */
-export async function loadExercises(): Promise<{ id: string; name: string }[]> {
+/** All exercises the user can link a habit to (id + name + optional adaptation tag). */
+export async function loadExercises(): Promise<{ id: string; name: string; adaptation: Adaptation | null }[]> {
   const { data, error } = await supabase
     .from('exercises')
-    .select('id, name')
+    .select('id, name, default_adaptation')
     .order('name')
   if (error) throw error
-  return (data ?? []).map(e => ({ id: e.id, name: e.name }))
+  return (data ?? []).map(e => ({
+    id: e.id,
+    name: e.name,
+    adaptation: (e.default_adaptation ?? null) as Adaptation | null,
+  }))
+}
+
+/** Set (or clear, with null) an exercise's adaptation override. */
+export async function setExerciseAdaptation(
+  exerciseId: string,
+  adaptation: Adaptation | null,
+): Promise<void> {
+  const { error } = await supabase
+    .from('exercises')
+    .update({ default_adaptation: adaptation })
+    .eq('id', exerciseId)
+  if (error) throw error
 }
 
 /** Name-keyed exercise→muscle links (with impact level + stimulus/recovery). */
