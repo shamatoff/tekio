@@ -14,13 +14,20 @@ interface InfoTipProps {
  */
 export function InfoTip({ children, label = 'More info', accent }: InfoTipProps) {
   const [open, setOpen] = useState(false)
+  const tint = accent ?? 'var(--color-accent)'
   return (
     <span className="relative inline-flex">
       <button
         type="button"
         aria-label={label}
+        aria-expanded={open}
         onClick={(e) => { e.stopPropagation(); setOpen(v => !v) }}
-        className="w-5 h-5 flex items-center justify-center rounded-full border border-border text-[11px] font-bold text-muted hover:text-accent hover:border-accent transition-colors"
+        className="w-5 h-5 flex items-center justify-center rounded-full border text-[11px] font-bold transition-colors"
+        style={
+          open
+            ? { backgroundColor: tint, borderColor: tint, color: '#fff' }
+            : { color: tint, borderColor: tint }
+        }
       >
         i
       </button>
