@@ -28,6 +28,18 @@ export interface CardioEntry {
   notes?: string
 }
 
+/** The nine trainable physical adaptations (Huberman × Galpin framework). */
+export type Adaptation =
+  | 'skill'
+  | 'speed'
+  | 'power'
+  | 'strength'
+  | 'hypertrophy'
+  | 'muscular_endurance'
+  | 'anaerobic_capacity'
+  | 'vo2max'
+  | 'endurance'
+
 export type BodyRegion = 'upper' | 'lower' | 'core' | 'full_body'
 
 export interface MuscleGroup {

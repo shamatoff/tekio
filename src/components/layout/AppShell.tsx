@@ -11,7 +11,8 @@ import { ExportPane } from './ExportPane'
 import { AssistantFab } from '../assistant/AssistantFab'
 
 const TAB_TITLES: Record<string, string> = {
-  Home: 'Tekiō',
+  Home: 'Adaptations',
+  Overview: 'Overview',
   Program: 'Program',
   Weights: 'Weights',
   'Body Weight': 'Body Weight',

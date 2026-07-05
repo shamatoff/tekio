@@ -8,7 +8,8 @@ interface BottomNavProps {
 export function BottomNav({ tab, setTab, onMore, hidden }: BottomNavProps) {
   if (hidden) return null
   const tabs = [
-    { key: 'Home', icon: '🏠', label: 'Home' },
+    { key: 'Home', icon: '🎯', label: 'Adapt' },
+    { key: 'Overview', icon: '🏠', label: 'Overview' },
     { key: 'Program', icon: '📋', label: 'Program' },
   ]
   return (

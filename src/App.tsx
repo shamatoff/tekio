@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom'
 import { useAppStore } from './store/app'
 import { AppShell } from './components/layout/AppShell'
 import { HomeTab } from './components/tabs/HomeTab'
+import { OverviewTab } from './components/tabs/OverviewTab'
 import { WeightsTab } from './components/tabs/weights/WeightsTab'
 import { BodyWeightTab } from './components/tabs/BodyWeightTab'
 import { CardioTab } from './components/tabs/CardioTab'
@@ -17,11 +18,12 @@ import { HomeSkeleton } from './components/tabs/HomeSkeleton'
 
 const DRAWER_TABS = ['Weights', 'Body Weight', 'Cardio', 'Mobility', 'Skills', 'Donations', 'Water', 'Habits'] as const
 type DrawerTab = typeof DRAWER_TABS[number]
-type Tab = 'Home' | 'Program' | 'Profile' | DrawerTab
+type Tab = 'Home' | 'Overview' | 'Program' | 'Profile' | DrawerTab
 
 function TabContent({ tab, setTab }: { tab: Tab; setTab: (t: string) => void }) {
   switch (tab) {
     case 'Home': return <HomeTab setTab={setTab} />
+    case 'Overview': return <OverviewTab setTab={setTab} />
     case 'Program': return <ProgramTab />
     case 'Weights': return <WeightsTab />
     case 'Body Weight': return <BodyWeightTab />

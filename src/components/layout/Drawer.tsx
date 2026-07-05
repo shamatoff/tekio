@@ -68,6 +68,8 @@ export function Drawer({ open, onClose, tab, setTab, onExport, onImport }: Drawe
 
         {/* Nav */}
         <div className="flex-1 overflow-y-auto py-2">
+          <NavItem icon="🎯" label="Adaptations" active={tab === 'Home'} onClick={() => { setTab('Home'); onClose() }} />
+          <NavItem icon="🏠" label="Overview" active={tab === 'Overview'} onClick={() => { setTab('Overview'); onClose() }} />
           <NavItem icon="📋" label="Program" active={tab === 'Program'} onClick={() => { setTab('Program'); onClose() }} />
           <div className="px-4 pt-3 pb-1">
             <p className="text-[10px] font-bold text-muted uppercase tracking-widest">Log</p>
