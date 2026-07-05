@@ -82,6 +82,7 @@ export function Drawer({ open, onClose, tab, setTab }: DrawerProps) {
           <p className="text-[10px] font-bold text-muted uppercase tracking-widest">Account</p>
         </div>
         <NavItem icon="👤" label="Profile & Settings" active={tab === 'Profile'} onClick={() => { setTab('Profile'); onClose() }} />
+        <NavItem icon="🛠️" label="Admin" active={tab === 'Admin'} onClick={() => { setTab('Admin'); onClose() }} />
         <div className="h-4" />
       </div>
     </>

@@ -7,7 +7,6 @@ import type { Habit, HabitCadence } from '../../types'
 import { Card, SecTitle, EmptyMsg } from '../ui/Card'
 import { Btn, DelBtn, EditBtn } from '../ui/Button'
 import { HabitForm } from './habits/HabitForm'
-import { ExerciseMuscleEditor } from './habits/ExerciseMuscleEditor'
 
 const CADENCE_ORDER: HabitCadence[] = ['daily', 'weekly', 'monthly']
 const CADENCE_LABEL: Record<HabitCadence, string> = { daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly' }
@@ -160,7 +159,6 @@ function MuscleCoverageCard() {
           )
         })}
       </div>
-      <ExerciseMuscleEditor />
     </Card>
   )
 }

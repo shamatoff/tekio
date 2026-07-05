@@ -139,3 +139,23 @@ export async function createMuscleGroup(
   if (error) throw error
   return { id: data.id, name: data.name }
 }
+
+/** Update a muscle group's name, region and/or parent. */
+export async function updateMuscleGroup(
+  id: string,
+  patch: { name?: string; bodyRegion?: BodyRegion; parentId?: string | null },
+): Promise<void> {
+  const update: Record<string, unknown> = {}
+  if (patch.name !== undefined) update.name = patch.name.trim()
+  if (patch.bodyRegion !== undefined) update.body_region = patch.bodyRegion
+  if (patch.parentId !== undefined) update.parent_id = patch.parentId
+  const { error } = await supabase.from('muscle_groups').update(update).eq('id', id)
+  if (error) throw error
+}
+
+/** Delete a muscle group. Exercise links cascade; fails if it has child groups
+ *  or is referenced by a habit (surfaced to the caller). */
+export async function deleteMuscleGroup(id: string): Promise<void> {
+  const { error } = await supabase.from('muscle_groups').delete().eq('id', id)
+  if (error) throw error
+}

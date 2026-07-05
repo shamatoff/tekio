@@ -19,6 +19,7 @@ const TAB_TITLES: Record<string, string> = {
   Skills: 'Skills',
   Donations: 'Blood Donations',
   Profile: 'Profile & Settings',
+  Admin: 'Admin',
 }
 
 interface AppShellProps {

@@ -14,11 +14,12 @@ import { WaterTab } from './components/tabs/WaterTab'
 import { HabitsTab } from './components/tabs/HabitsTab'
 import { ProgramTab } from './components/tabs/ProgramTab'
 import { ProfileTab } from './components/tabs/ProfileTab'
+import { AdminTab } from './components/tabs/AdminTab'
 import { HomeSkeleton } from './components/tabs/HomeSkeleton'
 
 const DRAWER_TABS = ['Weights', 'Body Weight', 'Cardio', 'Mobility', 'Skills', 'Donations', 'Water', 'Habits'] as const
 type DrawerTab = typeof DRAWER_TABS[number]
-type Tab = 'Home' | 'Overview' | 'Program' | 'Profile' | DrawerTab
+type Tab = 'Home' | 'Overview' | 'Program' | 'Profile' | 'Admin' | DrawerTab
 
 function TabContent({ tab, setTab }: { tab: Tab; setTab: (t: string) => void }) {
   switch (tab) {
@@ -34,6 +35,7 @@ function TabContent({ tab, setTab }: { tab: Tab; setTab: (t: string) => void }) 
     case 'Water': return <WaterTab />
     case 'Habits': return <HabitsTab />
     case 'Profile': return <ProfileTab />
+    case 'Admin': return <AdminTab />
   }
 }
 
