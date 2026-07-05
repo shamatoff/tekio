@@ -6,8 +6,6 @@ import { Toast } from '../ui/Toast'
 import { EditModal } from '../ui/EditModal'
 import { Drawer } from './Drawer'
 import { BottomNav } from './BottomNav'
-import { ImportPane } from './ImportPane'
-import { ExportPane } from './ExportPane'
 import { AssistantFab } from '../assistant/AssistantFab'
 
 const TAB_TITLES: Record<string, string> = {
@@ -31,8 +29,6 @@ interface AppShellProps {
 
 export function AppShell({ tab, setTab, children }: AppShellProps) {
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const [importing, setImporting] = useState(false)
-  const [exporting, setExporting] = useState(false)
   const [inputFocused, setInputFocused] = useState(false)
   const programs = useAppStore(s => s.programs)
   const { isDeload, week } = cycleInfo(programs[0] ?? null)
@@ -63,12 +59,7 @@ export function AppShell({ tab, setTab, children }: AppShellProps) {
         onClose={() => setDrawerOpen(false)}
         tab={tab}
         setTab={setTab}
-        onExport={() => { setDrawerOpen(false); setTimeout(() => setExporting(true), 300) }}
-        onImport={() => { setDrawerOpen(false); setTimeout(() => setImporting(true), 300) }}
       />
-
-      {importing && <ImportPane onClose={() => setImporting(false)} />}
-      {exporting && <ExportPane onClose={() => setExporting(false)} />}
 
       {/* Header */}
       <header className={headerClass}>

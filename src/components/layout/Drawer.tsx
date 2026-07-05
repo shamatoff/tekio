@@ -16,8 +16,6 @@ interface DrawerProps {
   onClose: () => void
   tab: string
   setTab: (tab: string) => void
-  onExport: () => void
-  onImport: () => void
 }
 
 function NavItem({ icon, label, active, onClick }: { icon: string; label: string; active: boolean; onClick: () => void }) {
@@ -33,7 +31,7 @@ function NavItem({ icon, label, active, onClick }: { icon: string; label: string
   )
 }
 
-export function Drawer({ open, onClose, tab, setTab, onExport, onImport }: DrawerProps) {
+export function Drawer({ open, onClose, tab, setTab }: DrawerProps) {
   const { sections } = usePrefs()
 
   // Build ordered nav from prefs; fall back to default order if prefs not loaded yet
@@ -84,23 +82,7 @@ export function Drawer({ open, onClose, tab, setTab, onExport, onImport }: Drawe
           <p className="text-[10px] font-bold text-muted uppercase tracking-widest">Account</p>
         </div>
         <NavItem icon="👤" label="Profile & Settings" active={tab === 'Profile'} onClick={() => { setTab('Profile'); onClose() }} />
-
-        {/* Data section */}
-        <div className="p-4 border-t border-border flex flex-col gap-2">
-          <p className="text-[11px] font-bold text-muted uppercase tracking-widest mb-1">Data</p>
-          <button
-            onClick={onExport}
-            className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-border bg-bg text-sm font-medium text-primary hover:bg-surface transition-colors"
-          >
-            <span>📤</span> Export to clipboard
-          </button>
-          <button
-            onClick={onImport}
-            className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-border bg-bg text-sm font-medium text-primary hover:bg-surface transition-colors"
-          >
-            <span>📥</span> Import from clipboard
-          </button>
-        </div>
+        <div className="h-4" />
       </div>
     </>
   )

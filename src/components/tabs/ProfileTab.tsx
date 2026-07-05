@@ -14,9 +14,12 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { useState } from 'react'
 import { usePrefs } from '../../store/prefs'
 import { SecTitle } from '../ui/Card'
 import { AssistantSettings } from './AssistantSettings'
+import { ImportPane } from '../layout/ImportPane'
+import { ExportPane } from '../layout/ExportPane'
 import type { SectionConfig } from '../../lib/db/sectionConfig'
 
 const SECTION_META: Record<string, { icon: string; label: string }> = {
@@ -122,6 +125,7 @@ function SortableRow({ section }: { section: SectionConfig }) {
 
 export function ProfileTab() {
   const { sections, reorderSections, weekStartDay, setWeekStartDay } = usePrefs()
+  const [dataAction, setDataAction] = useState<'import' | 'export' | null>(null)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -183,6 +187,30 @@ export function ProfileTab() {
           </SortableContext>
         </DndContext>
       </div>
+
+      <div>
+        <SecTitle>Data</SecTitle>
+        <p className="text-xs text-muted mb-3">
+          Export or import your entries as JSON via the clipboard.
+        </p>
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={() => setDataAction('export')}
+            className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-border bg-surface text-sm font-medium text-primary hover:bg-bg transition-colors"
+          >
+            <span>📤</span> Export to clipboard
+          </button>
+          <button
+            onClick={() => setDataAction('import')}
+            className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl border border-border bg-surface text-sm font-medium text-primary hover:bg-bg transition-colors"
+          >
+            <span>📥</span> Import from clipboard
+          </button>
+        </div>
+      </div>
+
+      {dataAction === 'import' && <ImportPane onClose={() => setDataAction(null)} />}
+      {dataAction === 'export' && <ExportPane onClose={() => setDataAction(null)} />}
     </div>
   )
 }
