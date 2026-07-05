@@ -45,8 +45,8 @@ function Figure({ torso, label, fill }: { torso: 'Chest' | 'Back'; label: string
         </g>
         {/* torso: chest (front) or back */}
         <rect x="43" y="42" width="34" height="30" rx="6" fill={fill(torso)} {...zone} />
-        {/* core */}
-        <rect x="46" y="70" width="28" height="36" rx="5" fill={fill('Core')} {...zone} />
+        {/* core (front) or lower back (back figure) */}
+        <rect x="46" y="70" width="28" height="36" rx="5" fill={fill(torso === 'Back' ? 'Lower Back' : 'Core')} {...zone} />
         {/* pelvis bridge (legs colour) */}
         <path d="M46 104 h28 v6 q-14 6 -28 0 z" fill={fill('Legs')} {...zone} />
         {/* shoulders */}
