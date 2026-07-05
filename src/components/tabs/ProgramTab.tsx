@@ -758,21 +758,41 @@ export function ProgramTab() {
     )
   }
 
+  const startFromScratch = () => setEditing({
+    draft: { name: 'New Program', days: [], startDate: today(), currentDayIndex: 0, lastAdvancedDate: today() },
+  })
+
   return (
     <div className="flex flex-col gap-4">
       {programs.length === 0 && (
         <Card>
-          <SecTitle>No Active Programs</SecTitle>
+          <SecTitle>Start a Program</SecTitle>
           <p className="text-sm text-muted mb-4">
-            Create your own program or start with the predefined 5-day split.
+            Pick a ready-made template to customize, or build your own from scratch.
           </p>
           <div className="flex flex-col gap-2">
-            <Btn
+            <p className="text-[11px] font-semibold text-muted uppercase tracking-wide">Templates</p>
+            <button
               onClick={() => setEditing({ draft: defaultProgram() })}
-              className="w-full"
+              className="w-full flex items-center gap-3 text-left rounded-xl border border-border bg-bg/40 p-3 active:scale-[0.98] transition-transform hover:border-accent"
             >
-              🏋️ Use 5-Day High Efficiency Split
-            </Btn>
+              <span className="text-2xl shrink-0">🏋️</span>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-primary">5-Day High Efficiency Split</p>
+                <p className="text-[11px] text-muted">Squat/bench/deadlift-based split with supersets</p>
+              </div>
+            </button>
+            <p className="text-[11px] font-semibold text-muted uppercase tracking-wide mt-2">Or start blank</p>
+            <button
+              onClick={startFromScratch}
+              className="w-full flex items-center gap-3 text-left rounded-xl border border-dashed border-border bg-surface p-3 active:scale-[0.98] transition-transform hover:border-accent"
+            >
+              <span className="text-2xl shrink-0">✏️</span>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-accent">Create from scratch</p>
+                <p className="text-[11px] text-muted">Build your own days, blocks and exercises</p>
+              </div>
+            </button>
           </div>
         </Card>
       )}
@@ -807,14 +827,14 @@ export function ProgramTab() {
         </div>
       )}
 
-      <button
-        onClick={() => setEditing({
-          draft: { name: 'New Program', days: [], startDate: today(), currentDayIndex: 0, lastAdvancedDate: today() },
-        })}
-        className="w-full border-2 border-dashed border-border bg-surface rounded-2xl p-4 text-center"
-      >
-        <span className="text-sm font-semibold text-accent">+ Add New Program</span>
-      </button>
+      {programs.length > 0 && (
+        <button
+          onClick={startFromScratch}
+          className="w-full border-2 border-dashed border-border bg-surface rounded-2xl p-4 text-center"
+        >
+          <span className="text-sm font-semibold text-accent">+ Add New Program</span>
+        </button>
+      )}
     </div>
   )
 }
