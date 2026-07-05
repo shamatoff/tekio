@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import type { AdaptationMeta } from '../../../constants/adaptations'
 import type { AdaptationSummary } from '../../../lib/adaptations'
 import { InfoTip } from '../../ui/InfoTip'
 import { AdaptationRxTable } from './AdaptationRx'
 import { MuscleStatusList } from './MuscleStatusList'
+import { BodyMap } from './BodyMap'
 
 interface AdaptationCardProps {
   meta: AdaptationMeta
@@ -14,6 +16,7 @@ interface AdaptationCardProps {
 export function AdaptationCard({ meta, summary, open, onToggle }: AdaptationCardProps) {
   const isResistance = meta.modality === 'resistance' && meta.weeklyMuscleTarget > 0
   const worked = summary.volume > 0
+  const [view, setView] = useState<'body' | 'list'>('body')
 
   return (
     <div className="bg-surface border border-border rounded-xl overflow-hidden" style={{ borderLeft: `3px solid ${meta.color}` }}>
@@ -61,10 +64,25 @@ export function AdaptationCard({ meta, summary, open, onToggle }: AdaptationCard
           </div>
           {isResistance ? (
             <div>
-              <p className="text-[11px] font-semibold text-muted uppercase tracking-wide mb-2">
-                Muscle groups · this week
-              </p>
-              <MuscleStatusList muscles={summary.muscles} />
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[11px] font-semibold text-muted uppercase tracking-wide">
+                  Muscle groups · this week
+                </p>
+                <div className="flex rounded-lg border border-border overflow-hidden">
+                  {(['body', 'list'] as const).map(v => (
+                    <button
+                      key={v}
+                      onClick={() => setView(v)}
+                      className={`px-2 py-0.5 text-[10px] font-semibold transition-colors ${
+                        view === v ? 'bg-accent-l text-accent' : 'bg-surface text-muted'
+                      }`}
+                    >
+                      {v === 'body' ? '🧍 Body' : '☰ List'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {view === 'body' ? <BodyMap muscles={summary.muscles} /> : <MuscleStatusList muscles={summary.muscles} />}
             </div>
           ) : (
             <p className="text-[11px] text-muted">
