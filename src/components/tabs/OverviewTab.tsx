@@ -2,78 +2,16 @@ import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useAppStore } from '../../store/app'
 import { usePrefs } from '../../store/prefs'
-import { cycleInfo, getGrouped, weekKey, today, currentStreak, habitProgress } from '../../lib/utils'
+import { weekKey, today, currentStreak, habitProgress } from '../../lib/utils'
 import type { HabitProgressContext } from '../../lib/utils'
-import { CYCLE, WATER_GOAL_ML } from '../../constants/app'
+import { WATER_GOAL_ML } from '../../constants/app'
 import { Card } from '../ui/Card'
 import { Chip } from '../ui/Chip'
 import { MiniChart } from '../ui/MiniChart'
 import { useCountUp } from '../../hooks/useCountUp'
-import type { ActiveProgram } from '../../types'
 
 interface OverviewTabProps {
   setTab: (t: string) => void
-}
-
-function ProgramHeroCard({ ap, setTab }: { ap: ActiveProgram; setTab: (t: string) => void }) {
-  const { week, isDeload, isComplete } = cycleInfo(ap)
-  const progDay = ap.days[ap.currentDayIndex % ap.days.length]
-
-  if (isComplete) {
-    return (
-      <button
-        onClick={() => setTab('Program')}
-        className="text-left w-full rounded-2xl p-4 bg-accent-l border-2 border-accent active:scale-[0.98] transition-transform"
-      >
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wide mb-0.5 text-accent">
-              🎉 Cycle Complete
-            </p>
-            <p className="text-sm font-bold mb-0.5 text-accent">{ap.name}</p>
-            <p className="text-xs text-accent/70">Tap to restart or configure a new program</p>
-          </div>
-          <span className="text-2xl text-accent/60">→</span>
-        </div>
-      </button>
-    )
-  }
-
-  return (
-    <button
-      onClick={() => setTab('Program')}
-      className={`text-left w-full rounded-2xl p-4 active:scale-[0.98] transition-transform ${isDeload ? 'bg-dl-bg border-2 border-dl-bd' : 'bg-primary shadow-lg'}`}
-    >
-      <div className="flex items-center justify-between">
-        <div>
-          <p className={`text-[11px] font-semibold uppercase tracking-wide mb-0.5 ${isDeload ? 'text-dl-tx' : 'text-white/60'}`}>
-            {isDeload ? `⚠️ Deload — ${ap.name}` : `${ap.name} · Week ${week} of ${CYCLE}`}
-          </p>
-          <p className={`text-sm font-bold mb-0.5 ${isDeload ? 'text-dl-tx' : 'text-white'}`}>
-            {progDay?.name || 'No day set'}
-          </p>
-          <p className={`text-xs ${isDeload ? 'text-dl-tx' : 'text-white/50'}`}>
-            {getGrouped(progDay).map(g =>
-              g.type === 'superset' ? `[SS: ${g.exercises.join('+')}]` : g.exercises[0]
-            ).join(' · ')}
-          </p>
-        </div>
-        <span className={`text-2xl ${isDeload ? 'text-dl-tx' : 'text-white/70'}`}>→</span>
-      </div>
-      {!isDeload && (
-        <div className="flex gap-1 mt-3">
-          {Array.from({ length: CYCLE }, (_, i) => (
-            <div
-              key={i}
-              className={`flex-1 h-0.5 rounded-full transition-all duration-700 ${
-                i < week - 1 ? 'bg-white/90' : i === week - 1 ? 'bg-white/50 animate-pulse' : 'bg-white/15'
-              }`}
-            />
-          ))}
-        </div>
-      )}
-    </button>
-  )
 }
 
 function StatBox({
@@ -120,7 +58,7 @@ function CardHeader({ title, onOpen, right }: { title: ReactNode; onOpen: () => 
 const WATER_PILLS = [100, 200, 300, 400, 500]
 
 export function OverviewTab({ setTab }: OverviewTabProps) {
-  const { weights, bodyweight, cardio, mobility, skills, donations, water, addWaterEntry, setToast, programs,
+  const { weights, bodyweight, cardio, mobility, skills, donations, water, addWaterEntry, setToast,
     habits, habitCompletions, exerciseMuscles, muscleGroups, exerciseNames } = useAppStore()
   const { sections, weekStartDay } = usePrefs()
 
@@ -237,11 +175,6 @@ export function OverviewTab({ setTab }: OverviewTabProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Program hero cards */}
-      {programs.map(ap => (
-        <ProgramHeroCard key={ap.userProgramId} ap={ap} setTab={setTab} />
-      ))}
-
       {/* Streak */}
       {streak > 0 && (
         <div className="flex items-center gap-2 bg-gradient-to-r from-orange-50 to-amber-50 border border-amber-200 rounded-xl px-3 py-2 animate-fade-in-up">
