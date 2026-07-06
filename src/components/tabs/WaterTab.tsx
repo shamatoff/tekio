@@ -30,9 +30,17 @@ export function WaterTab() {
 
   const dailyTotals = new Map<string, number>()
   water.forEach(w => dailyTotals.set(w.date, (dailyTotals.get(w.date) ?? 0) + w.amountMl))
-  const chartData = [...dailyTotals.entries()]
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([d, total]) => ({ date: d.slice(5), total }))
+  const loggedDays = [...dailyTotals.keys()].sort((a, b) => a.localeCompare(b))
+  // Fill every calendar day between first and last log; missed days get a null
+  // total so the line breaks there and resumes on the next logged day.
+  const chartData: { date: string; total: number | null }[] = []
+  if (loggedDays.length > 0) {
+    const end = new Date(loggedDays[loggedDays.length - 1] + 'T00:00:00Z')
+    for (let d = new Date(loggedDays[0] + 'T00:00:00Z'); d <= end; d.setUTCDate(d.getUTCDate() + 1)) {
+      const iso = d.toISOString().slice(0, 10)
+      chartData.push({ date: iso.slice(5), total: dailyTotals.get(iso) ?? null })
+    }
+  }
 
   return (
     <div className="flex flex-col gap-4">

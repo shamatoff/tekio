@@ -32,16 +32,26 @@ export function InfoTip({ children, label = 'More info', accent }: InfoTipProps)
         i
       </button>
       {open && (
-        <>
-          <div className="fixed inset-0 z-[150]" onClick={(e) => { e.stopPropagation(); setOpen(false) }} />
+        <div
+          className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/30"
+          onClick={(e) => { e.stopPropagation(); setOpen(false) }}
+        >
           <div
-            className="absolute right-0 top-6 z-[151] w-60 rounded-xl border border-border bg-surface shadow-xl p-3 text-left"
+            className="relative z-[151] w-full max-w-xs max-h-[80vh] overflow-y-auto rounded-xl border border-border bg-surface shadow-xl p-4 text-left"
             style={accent ? { borderLeftWidth: 3, borderLeftColor: accent } : undefined}
             onClick={(e) => e.stopPropagation()}
           >
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={(e) => { e.stopPropagation(); setOpen(false) }}
+              className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full text-muted hover:text-primary text-sm"
+            >
+              ✕
+            </button>
             {children}
           </div>
-        </>
+        </div>
       )}
     </span>
   )

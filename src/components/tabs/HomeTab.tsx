@@ -8,6 +8,7 @@ import type { Adaptation } from '../../types'
 import { Card } from '../ui/Card'
 import { AdaptationCard } from './home/AdaptationCard'
 import { AdaptationGuide } from './home/AdaptationGuide'
+import { MuscleCoverageCard } from './home/MuscleCoverageCard'
 
 interface HomeTabProps {
   setTab: (t: string) => void
@@ -76,6 +77,8 @@ export function HomeTab({ setTab }: HomeTabProps) {
         <span>🟡 needs work</span>
         <span>⚪ untouched</span>
       </div>
+
+      <MuscleCoverageCard />
 
       <AdaptationGuide />
     </div>
