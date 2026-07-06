@@ -117,6 +117,37 @@ export function defaultProgram(): Program {
   }
 }
 
+// ── One-rep-max estimation ────────────────────────────────────────────────────
+
+/** Epley estimated 1RM: weight × (1 + reps/30). */
+export function epley1RM(weight: number, reps: number): number {
+  return weight * (1 + reps / 30)
+}
+
+/** Brzycki estimated 1RM: weight × 36/(37 − reps). Undefined (→0) at ≥37 reps. */
+export function brzycki1RM(weight: number, reps: number): number {
+  if (reps >= 37) return 0
+  return (weight * 36) / (37 - reps)
+}
+
+/**
+ * Estimated 1RM for a single set, blending the Epley and Brzycki formulas
+ * (they diverge at the extremes). A single rep is already a true max; very high
+ * reps fall back to Epley since Brzycki breaks down.
+ */
+export function estimate1RM(weight: number, reps: number): number {
+  if (!weight || reps < 1) return 0
+  if (reps === 1) return weight
+  const e = epley1RM(weight, reps)
+  const b = brzycki1RM(weight, reps)
+  return b > 0 ? (e + b) / 2 : e
+}
+
+/** Best estimated 1RM across a group of sets (0 if none). */
+export function best1RM(sets: { weight: number; reps: number }[]): number {
+  return sets.reduce((m, s) => Math.max(m, estimate1RM(s.weight, s.reps)), 0)
+}
+
 // ── Cardio duration helpers ───────────────────────────────────────────────────
 
 /** Parses "MM:SS" or plain minutes string → decimal minutes */

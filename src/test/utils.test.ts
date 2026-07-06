@@ -1,6 +1,41 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { cycleInfo, isDeloadDate, isTodayDone, mergeById, cycleExerciseProgress } from '../lib/utils'
+import { cycleInfo, isDeloadDate, isTodayDone, mergeById, cycleExerciseProgress, estimate1RM, best1RM } from '../lib/utils'
 import type { WeightEntry, Program, ProgramDay } from '../types'
+
+// ---------------------------------------------------------------------------
+// 1RM estimation
+// ---------------------------------------------------------------------------
+
+describe('estimate1RM', () => {
+  it('returns the weight itself for a single rep', () => {
+    expect(estimate1RM(100, 1)).toBe(100)
+  })
+
+  it('blends Epley and Brzycki for multi-rep sets', () => {
+    // Epley: 100×(1+5/30)=116.67 ; Brzycki: 100×36/32=112.5 ; mean ≈ 114.58
+    expect(estimate1RM(100, 5)).toBeCloseTo(114.58, 1)
+  })
+
+  it('falls back to Epley at very high reps', () => {
+    expect(estimate1RM(50, 40)).toBeCloseTo(50 * (1 + 40 / 30), 5)
+  })
+
+  it('is zero for empty input', () => {
+    expect(estimate1RM(0, 5)).toBe(0)
+    expect(estimate1RM(100, 0)).toBe(0)
+  })
+})
+
+describe('best1RM', () => {
+  it('takes the max estimate across sets', () => {
+    const sets = [{ weight: 80, reps: 8 }, { weight: 100, reps: 3 }, { weight: 60, reps: 12 }]
+    expect(best1RM(sets)).toBeCloseTo(estimate1RM(100, 3), 5)
+  })
+
+  it('is zero with no sets', () => {
+    expect(best1RM([])).toBe(0)
+  })
+})
 
 // ---------------------------------------------------------------------------
 // Helpers

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { ResponsiveContainer, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Line } from 'recharts'
 import { useAppStore } from '../../../store/app'
-import { today, cycleInfo, isDeloadDate, isTodayDone, programMode, activeVariantWeekdays } from '../../../lib/utils'
+import { today, cycleInfo, isDeloadDate, isTodayDone, programMode, activeVariantWeekdays, best1RM } from '../../../lib/utils'
 import { Card, SecTitle } from '../../ui/Card'
 import { Inp } from '../../ui/Input'
 import { Btn, DelBtn, EditBtn } from '../../ui/Button'
@@ -58,6 +58,21 @@ export function WeightsTab() {
       : undefined
 
   const lastPerf = getLastPerf(ex)
+
+  // Estimated 1RM (Epley × Brzycki blend): live from the sets being entered,
+  // plus the historical best across all logged sets for this exercise.
+  const liveSets = sets.slice(0, revealed)
+    .filter(s => s.weight && s.reps)
+    .map(s => ({ weight: +s.weight, reps: +s.reps }))
+  const live1RM = best1RM(liveSets)
+  const historical1RM = ex.trim()
+    ? Math.max(
+        0,
+        ...weights
+          .filter(d => d.exercise.toLowerCase() === ex.trim().toLowerCase())
+          .map(d => best1RM(d.sets)),
+      )
+    : 0
 
   const handleSelectEx = (n: string) => {
     setEx(n); setSelEx(n); setSsExercises(null)
@@ -228,6 +243,21 @@ export function WeightsTab() {
             </button>
           </div>
 
+          {(live1RM > 0 || historical1RM > 0) && (
+            <div className="flex items-center justify-between px-2.5 py-2 bg-accent-l rounded-lg mb-3 text-xs">
+              <span className="text-muted font-medium">💪 Est. 1RM</span>
+              <span className="text-primary font-semibold tabular-nums flex items-center gap-1.5">
+                {live1RM > 0 ? `${Math.round(live1RM)} kg` : '–'}
+                {historical1RM > 0 && (
+                  <span className="text-muted font-normal">· best {Math.round(historical1RM)} kg</span>
+                )}
+                {live1RM > 0 && live1RM >= historical1RM && historical1RM > 0 && (
+                  <span className="text-accent font-bold">🏆 PR</span>
+                )}
+              </span>
+            </div>
+          )}
+
           <Btn onClick={addEntry} className="w-full">Save Exercise</Btn>
         </Card>
       )}
@@ -323,7 +353,14 @@ export function WeightsTab() {
             return (
               <div key={gi} className="flex items-start justify-between py-2 border-b border-bg last:border-0">
                 <div>
-                  <p className="text-sm font-semibold text-primary">{entry.exercise}</p>
+                  <p className="text-sm font-semibold text-primary flex items-center gap-1.5">
+                    {entry.exercise}
+                    {best1RM(entry.sets) > 0 && (
+                      <span className="text-[10px] font-medium text-accent bg-accent-l px-1.5 py-0.5 rounded-full">
+                        ≈{Math.round(best1RM(entry.sets))}kg 1RM
+                      </span>
+                    )}
+                  </p>
                   <div className="flex flex-wrap gap-1 mt-0.5">
                     {entry.sets.map((s, i) => (
                       <span key={i} className="px-1.5 py-0.5 rounded bg-bg text-[11px] text-muted">S{i + 1}: {s.weight}kg×{s.reps}</span>
