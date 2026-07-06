@@ -41,19 +41,27 @@ export function AdaptationCard({ meta, summary, open, onToggle }: AdaptationCard
           <p className="text-[11px] text-muted truncate">{meta.summary}</p>
         </div>
         <div className="text-right shrink-0">
-          <p className="text-base font-bold tabular-nums" style={{ color: worked ? meta.color : '#94a3b8' }}>
+          <p className="text-base font-bold tabular-nums flex items-center gap-1 justify-end" style={{ color: worked ? meta.color : '#94a3b8' }}>
+            {summary.met && <span title="On target this week">✅</span>}
             {summary.volume}
           </p>
           <p className="text-[10px] text-muted -mt-0.5">{summary.unit}</p>
         </div>
-        {isResistance && (
+        {isResistance ? (
           <div className="shrink-0 text-right w-14">
             <p className="text-[11px] font-semibold tabular-nums text-primary">
               {summary.onTrack}/{summary.totalMuscles}
             </p>
             <p className="text-[9px] text-muted -mt-0.5 leading-tight">on track</p>
           </div>
-        )}
+        ) : summary.sessionTarget > 0 ? (
+          <div className="shrink-0 text-right w-14">
+            <p className="text-[11px] font-semibold tabular-nums text-primary">
+              {summary.volume}/{summary.sessionTarget}
+            </p>
+            <p className="text-[9px] text-muted -mt-0.5 leading-tight">target</p>
+          </div>
+        ) : null}
         <span className="text-muted text-xs shrink-0">{open ? '▾' : '▸'}</span>
       </div>
 

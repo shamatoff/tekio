@@ -14,9 +14,11 @@ import {
   arrayMove,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { usePrefs } from '../../store/prefs'
+import { useAppStore } from '../../store/app'
 import { SecTitle } from '../ui/Card'
+import { Chip } from '../ui/Chip'
 import { AssistantSettings } from './AssistantSettings'
 import { ImportPane } from '../layout/ImportPane'
 import { ExportPane } from '../layout/ExportPane'
@@ -124,8 +126,23 @@ function SortableRow({ section }: { section: SectionConfig }) {
 // ─── ProfileTab ──────────────────────────────────────────────────────────────
 
 export function ProfileTab() {
-  const { sections, reorderSections, weekStartDay, setWeekStartDay } = usePrefs()
+  const {
+    sections, reorderSections, weekStartDay, setWeekStartDay,
+    trackedMuscleGroupIds, setTrackedMuscleGroupIds,
+  } = usePrefs()
+  const muscleGroups = useAppStore(s => s.muscleGroups)
   const [dataAction, setDataAction] = useState<'import' | 'export' | null>(null)
+
+  const topMuscles = useMemo(
+    () => muscleGroups.filter(g => !g.parentId).sort((a, b) => a.name.localeCompare(b.name)),
+    [muscleGroups],
+  )
+  const tracked = new Set(trackedMuscleGroupIds)
+  const toggleMuscle = (id: string) => {
+    const next = new Set(tracked)
+    next.has(id) ? next.delete(id) : next.add(id)
+    setTrackedMuscleGroupIds([...next])
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -162,6 +179,31 @@ export function ProfileTab() {
               </button>
             ))}
           </div>
+        </div>
+      </div>
+
+      <div>
+        <SecTitle>Adaptation Tracking</SecTitle>
+        <div className="bg-surface border border-border rounded-xl p-3">
+          <p className="text-xs text-muted mb-2.5">
+            Choose which muscle groups must hit their weekly target for a resistance adaptation to
+            count as “on target” on the dashboard. Select none to count every muscle group.
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {topMuscles.map(g => (
+              <Chip key={g.id} small active={tracked.has(g.id)} onClick={() => toggleMuscle(g.id)}>
+                {g.name}
+              </Chip>
+            ))}
+          </div>
+          {tracked.size > 0 && (
+            <button
+              onClick={() => setTrackedMuscleGroupIds([])}
+              className="text-[11px] text-accent mt-2.5"
+            >
+              Reset to all muscle groups
+            </button>
+          )}
         </div>
       </div>
 

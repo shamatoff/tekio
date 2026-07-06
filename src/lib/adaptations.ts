@@ -61,10 +61,18 @@ export interface AdaptationSummary {
   unit: 'sets' | 'sessions'
   /** Top-level muscle rows with rolled-up children (resistance adaptations only). */
   muscles: MuscleStatusRow[]
-  /** On-track / worked / total muscle counts (resistance only). */
+  /** On-track / worked / total counts over the *tracked* muscle subset (resistance only). */
   onTrack: number
   worked: number
   totalMuscles: number
+  /** Weekly session target for cardio/skill adaptations (0 for resistance). */
+  sessionTarget: number
+  /**
+   * Whether the adaptation's weekly target is fully met — every tracked muscle
+   * on track (resistance), or the session target reached (cardio/skill). Drives
+   * the "adaptations trained" counter.
+   */
+  met: boolean
 }
 
 function statusFor(aggSets: number, target: number): MuscleStatus {
@@ -91,10 +99,18 @@ export function adaptationCoverage(
     date?: string
     /** Optional exercise-name → adaptation overrides (lowercased keys). */
     overrides?: Record<string, Adaptation>
+    /**
+     * Top-level muscle-group ids the user tracks toward completion. Empty/omitted
+     * counts every muscle group.
+     */
+    trackedMuscleIds?: string[]
   },
 ): Record<Adaptation, AdaptationSummary> {
   const { weights, cardio, skills, exerciseMuscles, muscleGroups, weekStart, overrides } = args
   const date = args.date ?? today()
+  const trackedSet = args.trackedMuscleIds && args.trackedMuscleIds.length > 0
+    ? new Set(args.trackedMuscleIds)
+    : null
 
   // exercise (lower) → stimulus links
   const linksByExercise = new Map<string, ExerciseMuscleLink[]>()
@@ -144,18 +160,27 @@ export function adaptationCoverage(
 
   const out = {} as Record<Adaptation, AdaptationSummary>
   for (const meta of ADAPTATIONS) {
+    const isResistance = meta.modality === 'resistance' && meta.weeklyMuscleTarget > 0
     const byGroup = muscle[meta.key]
-    const muscles = meta.modality === 'resistance' && meta.weeklyMuscleTarget > 0
+    const muscles = isResistance
       ? buildMuscleStatusTree(byGroup, muscleGroups, meta.weeklyMuscleTarget)
       : []
+    // Judge completion against the tracked subset (or all muscles if none set).
+    const relevant = trackedSet ? muscles.filter(m => trackedSet.has(m.id)) : muscles
+    const onTrack = relevant.filter(m => m.status === 'on_track').length
+    const met = isResistance
+      ? relevant.length > 0 && onTrack === relevant.length
+      : volume[meta.key] >= meta.weeklySessionTarget && meta.weeklySessionTarget > 0
     out[meta.key] = {
       key: meta.key,
       volume: volume[meta.key],
       unit: meta.modality === 'resistance' ? 'sets' : 'sessions',
       muscles,
-      onTrack: muscles.filter(m => m.status === 'on_track').length,
-      worked: muscles.filter(m => m.status !== 'untouched').length,
-      totalMuscles: muscles.length,
+      onTrack,
+      worked: relevant.filter(m => m.status !== 'untouched').length,
+      totalMuscles: relevant.length,
+      sessionTarget: meta.weeklySessionTarget,
+      met,
     }
   }
   return out

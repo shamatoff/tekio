@@ -1,25 +1,33 @@
 import { create } from 'zustand'
 import type { SectionConfig } from '../lib/db/sectionConfig'
 import { loadSectionConfig, updateSectionField, saveSectionConfig } from '../lib/db/sectionConfig'
-import { getWeekStartDay, updateWeekStartDay } from '../lib/db/user'
+import {
+  getWeekStartDay, updateWeekStartDay, getTrackedMuscleGroupIds, updateTrackedMuscleGroupIds,
+} from '../lib/db/user'
 import type { WeekStartDay } from '../lib/utils'
 
 interface PrefsStore {
   sections: SectionConfig[]
   weekStartDay: WeekStartDay
+  /** Muscle-group ids counted toward adaptation completion. Empty = count all. */
+  trackedMuscleGroupIds: string[]
   loadPrefs: () => Promise<void>
   setSection: (key: string, patch: Partial<Pick<SectionConfig, 'showInMenu' | 'showInHome'>>) => Promise<void>
   reorderSections: (newOrder: string[]) => Promise<void>
   setWeekStartDay: (value: WeekStartDay) => Promise<void>
+  setTrackedMuscleGroupIds: (ids: string[]) => Promise<void>
 }
 
 export const usePrefs = create<PrefsStore>((set, get) => ({
   sections: [],
   weekStartDay: 'monday',
+  trackedMuscleGroupIds: [],
 
   loadPrefs: async () => {
-    const [sections, weekStartDay] = await Promise.all([loadSectionConfig(), getWeekStartDay()])
-    set({ sections, weekStartDay })
+    const [sections, weekStartDay, trackedMuscleGroupIds] = await Promise.all([
+      loadSectionConfig(), getWeekStartDay(), getTrackedMuscleGroupIds(),
+    ])
+    set({ sections, weekStartDay, trackedMuscleGroupIds })
   },
 
   setSection: async (key, patch) => {
@@ -46,5 +54,10 @@ export const usePrefs = create<PrefsStore>((set, get) => ({
   setWeekStartDay: async (value) => {
     set({ weekStartDay: value })
     await updateWeekStartDay(value)
+  },
+
+  setTrackedMuscleGroupIds: async (ids) => {
+    set({ trackedMuscleGroupIds: ids })
+    await updateTrackedMuscleGroupIds(ids)
   },
 }))

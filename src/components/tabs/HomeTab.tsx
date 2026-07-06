@@ -15,17 +15,17 @@ interface HomeTabProps {
 
 export function HomeTab({ setTab }: HomeTabProps) {
   const { weights, cardio, skills, exerciseMuscles, muscleGroups, exerciseAdaptations } = useAppStore()
-  const { weekStartDay } = usePrefs()
+  const { weekStartDay, trackedMuscleGroupIds } = usePrefs()
   const weekStart = startOfWeek(today(), weekStartDay)
   const [openKey, setOpenKey] = useState<Adaptation | null>(null)
 
   const coverage = useMemo(
-    () => adaptationCoverage({ weights, cardio, skills, exerciseMuscles, muscleGroups, weekStart, overrides: exerciseAdaptations }),
-    [weights, cardio, skills, exerciseMuscles, muscleGroups, weekStart, exerciseAdaptations],
+    () => adaptationCoverage({ weights, cardio, skills, exerciseMuscles, muscleGroups, weekStart, overrides: exerciseAdaptations, trackedMuscleIds: trackedMuscleGroupIds }),
+    [weights, cardio, skills, exerciseMuscles, muscleGroups, weekStart, exerciseAdaptations, trackedMuscleGroupIds],
   )
 
   const total = totalAdaptationVolume(coverage)
-  const trained = ADAPTATIONS.filter(a => coverage[a.key].volume > 0).length
+  const onTarget = ADAPTATIONS.filter(a => coverage[a.key].met).length
 
   return (
     <div className="flex flex-col gap-4">
@@ -36,8 +36,8 @@ export function HomeTab({ setTab }: HomeTabProps) {
         </p>
         <div className="flex items-end gap-4">
           <div>
-            <p className="text-3xl font-bold leading-none">{trained}<span className="text-lg text-white/50">/9</span></p>
-            <p className="text-[11px] text-white/60 mt-1">adaptations trained</p>
+            <p className="text-3xl font-bold leading-none">{onTarget}<span className="text-lg text-white/50">/9</span></p>
+            <p className="text-[11px] text-white/60 mt-1">on target this week</p>
           </div>
           <div className="ml-auto text-right">
             <p className="text-2xl font-bold leading-none">{total}</p>

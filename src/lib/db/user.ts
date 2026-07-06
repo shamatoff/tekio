@@ -29,3 +29,23 @@ export async function updateWeekStartDay(value: WeekStartDay): Promise<void> {
     .eq('id', USER_ID)
   if (error) throw error
 }
+
+/** Muscle-group ids the user wants counted toward adaptation completion (empty = all). */
+export async function getTrackedMuscleGroupIds(): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('user_profiles')
+    .select('tracked_muscle_group_ids')
+    .eq('id', USER_ID)
+    .single()
+  if (error) throw error
+  const ids = data.tracked_muscle_group_ids
+  return Array.isArray(ids) ? (ids as string[]) : []
+}
+
+export async function updateTrackedMuscleGroupIds(ids: string[]): Promise<void> {
+  const { error } = await supabase
+    .from('user_profiles')
+    .update({ tracked_muscle_group_ids: ids })
+    .eq('id', USER_ID)
+  if (error) throw error
+}

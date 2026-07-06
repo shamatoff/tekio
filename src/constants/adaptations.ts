@@ -37,6 +37,12 @@ export interface AdaptationMeta {
    * (cardio / skill adaptations show sessions instead).
    */
   weeklyMuscleTarget: number
+  /**
+   * Weekly session target for non-resistance adaptations (cardio / skill). An
+   * adaptation counts as "on target" once this many sessions are logged. `0` for
+   * resistance adaptations, which are judged by their muscle targets instead.
+   */
+  weeklySessionTarget: number
 }
 
 /**
@@ -54,6 +60,7 @@ export const ADAPTATIONS: AdaptationMeta[] = [
     modality: 'skill',
     repRange: null,
     weeklyMuscleTarget: 0,
+    weeklySessionTarget: 3,
     rx: {
       load: 'Very light / bodyweight',
       reps: '3–5 crisp reps',
@@ -72,6 +79,7 @@ export const ADAPTATIONS: AdaptationMeta[] = [
     modality: 'resistance',
     repRange: null,
     weeklyMuscleTarget: 3,
+    weeklySessionTarget: 0,
     rx: {
       load: '0–30% 1RM',
       reps: '1–5, maximal velocity',
@@ -90,6 +98,7 @@ export const ADAPTATIONS: AdaptationMeta[] = [
     modality: 'resistance',
     repRange: null,
     weeklyMuscleTarget: 4,
+    weeklySessionTarget: 0,
     rx: {
       load: '30–70% 1RM',
       reps: '1–5, explosive intent',
@@ -108,6 +117,7 @@ export const ADAPTATIONS: AdaptationMeta[] = [
     modality: 'resistance',
     repRange: [1, 5],
     weeklyMuscleTarget: 8,
+    weeklySessionTarget: 0,
     rx: {
       load: '85–100% 1RM',
       reps: '3–5',
@@ -126,6 +136,7 @@ export const ADAPTATIONS: AdaptationMeta[] = [
     modality: 'resistance',
     repRange: [6, 15],
     weeklyMuscleTarget: 10,
+    weeklySessionTarget: 0,
     rx: {
       load: '30–80% 1RM',
       reps: '5–30 (≈8–15)',
@@ -144,6 +155,7 @@ export const ADAPTATIONS: AdaptationMeta[] = [
     modality: 'resistance',
     repRange: [16, 999],
     weeklyMuscleTarget: 6,
+    weeklySessionTarget: 0,
     rx: {
       load: '<50% 1RM',
       reps: '15–40+',
@@ -162,6 +174,7 @@ export const ADAPTATIONS: AdaptationMeta[] = [
     modality: 'cardio',
     repRange: null,
     weeklyMuscleTarget: 0,
+    weeklySessionTarget: 1,
     rx: {
       load: 'All-out',
       reps: '20 s–2 min efforts',
@@ -180,6 +193,7 @@ export const ADAPTATIONS: AdaptationMeta[] = [
     modality: 'cardio',
     repRange: null,
     weeklyMuscleTarget: 0,
+    weeklySessionTarget: 1,
     rx: {
       load: '~90–100% max HR',
       reps: '3–8 min efforts',
@@ -198,6 +212,7 @@ export const ADAPTATIONS: AdaptationMeta[] = [
     modality: 'cardio',
     repRange: null,
     weeklyMuscleTarget: 0,
+    weeklySessionTarget: 2,
     rx: {
       load: 'Zone 2 (conversational)',
       reps: '30 min–hours',
