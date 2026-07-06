@@ -197,6 +197,7 @@ function CardioForm({ record, onClose, saveRef }: { record: CardioEntry; onClose
   const [type, setType] = useState(record.type)
   const [duration, setDuration] = useState(formatDurationMins(record.duration))
   const [distance, setDistance] = useState(record.distance != null ? String(record.distance) : '')
+  const [avgHr, setAvgHr] = useState(record.avgHr != null ? String(record.avgHr) : '')
   const [notes, setNotes] = useState(record.notes ?? '')
 
   const durationMins = parseDurationMins(duration)
@@ -211,6 +212,7 @@ function CardioForm({ record, onClose, saveRef }: { record: CardioEntry; onClose
         type,
         duration: durationMins,
         distance: distKm || undefined,
+        avgHr: avgHr ? +avgHr : undefined,
         notes: notes || undefined,
       })
       setToast('✅ Updated!')
@@ -250,6 +252,15 @@ function CardioForm({ record, onClose, saveRef }: { record: CardioEntry; onClose
           />
           {livePace && <p className="text-xs text-accent font-medium mt-1">⚡ {livePace}</p>}
         </div>
+        <Inp
+          label="Avg HR (bpm, opt.)"
+          type="number"
+          value={avgHr}
+          onChange={e => setAvgHr(e.target.value)}
+          placeholder="145"
+          min="0"
+          step="1"
+        />
       </div>
       <Inp
         label="Notes (opt.)"

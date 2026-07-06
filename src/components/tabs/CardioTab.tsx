@@ -15,6 +15,7 @@ export function CardioTab() {
   const [date, setDate] = useState(today())
   const [duration, setDuration] = useState('')
   const [distance, setDistance] = useState('')
+  const [avgHr, setAvgHr] = useState('')
   const [notes, setNotes] = useState('')
   const [filter, setFilter] = useState('All')
   const { cardio, addCardioEntry, removeCardioEntry, openEditModal, setToast } = useAppStore()
@@ -29,9 +30,10 @@ export function CardioTab() {
       await addCardioEntry({
         date, type, duration: durationMins,
         distance: distKm || undefined,
+        avgHr: avgHr ? +avgHr : undefined,
         notes: notes || undefined,
       })
-      setDuration(''); setDistance(''); setNotes('')
+      setDuration(''); setDistance(''); setAvgHr(''); setNotes('')
       setToast('✅ Session logged!')
     } catch {
       setToast('❌ Failed to save.')
@@ -87,6 +89,17 @@ export function CardioTab() {
             {livePace && (
               <p className="text-xs text-accent font-medium mt-1">⚡ {livePace}</p>
             )}
+          </div>
+          <div>
+            <Inp
+              label="Avg HR (bpm, opt.)"
+              type="number"
+              value={avgHr}
+              onChange={e => setAvgHr(e.target.value)}
+              placeholder="145"
+              min="0"
+              step="1"
+            />
           </div>
           <div className="col-span-2">
             <Inp label="Notes (opt.)" value={notes} onChange={e => setNotes(e.target.value)} placeholder="e.g. Easy zone 2" />
@@ -147,6 +160,7 @@ export function CardioTab() {
               <p className="text-xs text-muted mt-0.5 ml-0.5">
                 {formatDurationMins(d.duration)}
                 {d.distance ? ` · ${d.distance} km · ${calcPace(d.duration, d.distance)}` : ''}
+                {d.avgHr ? ` · ❤️ ${d.avgHr} bpm` : ''}
                 {d.notes ? ` — ${d.notes}` : ''}
               </p>
             </div>

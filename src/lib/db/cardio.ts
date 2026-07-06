@@ -5,7 +5,7 @@ import type { CardioEntry } from '../../types'
 export async function loadCardio(): Promise<CardioEntry[]> {
   const { data, error } = await supabase
     .from('cardio_sessions')
-    .select('id, session_date, activity_type, duration_minutes, distance_km, notes')
+    .select('id, session_date, activity_type, duration_minutes, distance_km, avg_heart_rate, notes')
     .eq('user_id', USER_ID)
     .order('session_date', { ascending: false })
   if (error) throw error
@@ -15,6 +15,7 @@ export async function loadCardio(): Promise<CardioEntry[]> {
     type: (CARDIO_TYPE_REVERSE[r.activity_type] ?? r.activity_type) as CardioEntry['type'],
     duration: Number(r.duration_minutes),
     distance: r.distance_km ? Number(r.distance_km) : undefined,
+    avgHr: r.avg_heart_rate ? Number(r.avg_heart_rate) : undefined,
     notes: r.notes ?? undefined,
   }))
 }
@@ -28,9 +29,10 @@ export async function saveCardioEntry(entry: Omit<CardioEntry, 'id'>): Promise<C
       activity_type: CARDIO_TYPE_MAP[entry.type] ?? entry.type.toLowerCase(),
       duration_minutes: entry.duration,
       distance_km: entry.distance ?? null,
+      avg_heart_rate: entry.avgHr ?? null,
       notes: entry.notes ?? null,
     })
-    .select('id, session_date, activity_type, duration_minutes, distance_km, notes')
+    .select('id, session_date, activity_type, duration_minutes, distance_km, avg_heart_rate, notes')
     .single()
   if (error) throw error
   return {
@@ -39,6 +41,7 @@ export async function saveCardioEntry(entry: Omit<CardioEntry, 'id'>): Promise<C
     type: (CARDIO_TYPE_REVERSE[data.activity_type] ?? data.activity_type) as CardioEntry['type'],
     duration: data.duration_minutes,
     distance: data.distance_km ? Number(data.distance_km) : undefined,
+    avgHr: data.avg_heart_rate ? Number(data.avg_heart_rate) : undefined,
     notes: data.notes ?? undefined,
   }
 }
@@ -59,6 +62,7 @@ export async function updateCardioEntry(
       activity_type: CARDIO_TYPE_MAP[patch.type] ?? patch.type.toLowerCase(),
       duration_minutes: patch.duration,
       distance_km: patch.distance ?? null,
+      avg_heart_rate: patch.avgHr ?? null,
       notes: patch.notes ?? null,
     })
     .eq('id', id)

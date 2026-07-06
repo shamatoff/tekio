@@ -25,6 +25,8 @@ export interface CardioEntry {
   type: CardioType
   duration: number
   distance?: number
+  /** Average heart rate (bpm) for the session. */
+  avgHr?: number
   notes?: string
 }
 
