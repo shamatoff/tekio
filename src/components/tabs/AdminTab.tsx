@@ -1,5 +1,6 @@
 import { Card } from '../ui/Card'
 import { MuscleGroupEditor } from './admin/MuscleGroupEditor'
+import { AdaptationTargetsEditor } from './admin/AdaptationTargetsEditor'
 import { ExerciseMuscleEditor } from './habits/ExerciseMuscleEditor'
 
 /**
@@ -15,6 +16,10 @@ export function AdminTab() {
           These editors change the shared exercise/muscle data behind every dashboard.
         </p>
       </div>
+
+      <Card>
+        <AdaptationTargetsEditor />
+      </Card>
 
       <Card>
         <MuscleGroupEditor />

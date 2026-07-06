@@ -16,6 +16,7 @@ import type {
 } from '../types'
 import { getOrCreateUser } from '../lib/db/user'
 import { loadMuscleGroups, loadExerciseMuscleLinks, loadExercises } from '../lib/db/muscles'
+import { loadAdaptationTargets, type AdaptationTargetMap } from '../lib/db/adaptationTargets'
 import { loadHabits, loadHabitCompletions, saveHabit, updateHabit, deleteHabit, upsertHabitCompletion } from '../lib/db/habits'
 import { habitPeriodStart } from '../lib/utils'
 import {
@@ -124,6 +125,11 @@ interface AppStore extends AppState {
 
   /** Refresh muscle groups, exercise→muscle links and exercise names (after mapping edits). */
   reloadMuscleData: () => Promise<void>
+
+  /** Server-side per-adaptation weekly targets (override built-in defaults). */
+  adaptationTargets: AdaptationTargetMap
+  /** Refresh adaptation targets after an admin edit. */
+  reloadAdaptationTargets: () => Promise<void>
 }
 
 /** Build the lowercased exercise-name → adaptation override map from loaded exercises. */
@@ -168,6 +174,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
   habitCompletions: [],
   exerciseNames: {},
   exerciseAdaptations: {},
+  adaptationTargets: {},
   loading: true,
   toast: '',
   editModal: null,
@@ -195,7 +202,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({ loading: true })
     try {
       await getOrCreateUser()
-      const [weights, activePrograms, programHistory, weekOverrides, bodyweight, cardio, mobility, muscleGroups, exerciseMuscles, exercises, habits, habitCompletions, skills, skillTypes, donations, water] = await Promise.all([
+      const [weights, activePrograms, programHistory, weekOverrides, bodyweight, cardio, mobility, muscleGroups, exerciseMuscles, exercises, habits, habitCompletions, skills, skillTypes, donations, water, adaptationTargets] = await Promise.all([
         loadWeights(),
         loadActivePrograms(),
         loadProgramCycles(),
@@ -212,6 +219,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
         loadSkillTypes(),
         loadDonations(),
         loadWater(),
+        loadAdaptationTargets(),
         usePrefs.getState().loadPrefs(),
       ])
       set({
@@ -232,10 +240,16 @@ export const useAppStore = create<AppStore>((set, get) => ({
         programs: activePrograms,
         programHistory,
         weekOverrides,
+        adaptationTargets,
       })
     } finally {
       set({ loading: false })
     }
+  },
+
+  reloadAdaptationTargets: async () => {
+    const adaptationTargets = await loadAdaptationTargets()
+    set({ adaptationTargets })
   },
 
   // ── Weights ──────────────────────────────────────────────────────────────────

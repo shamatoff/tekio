@@ -104,9 +104,14 @@ export function adaptationCoverage(
      * counts every muscle group.
      */
     trackedMuscleIds?: string[]
+    /**
+     * Per-adaptation weekly target overrides (from the DB). Missing keys fall back
+     * to the built-in defaults on each adaptation's metadata.
+     */
+    targets?: Partial<Record<Adaptation, { weeklyMuscleTarget: number; weeklySessionTarget: number }>>
   },
 ): Record<Adaptation, AdaptationSummary> {
-  const { weights, cardio, skills, exerciseMuscles, muscleGroups, weekStart, overrides } = args
+  const { weights, cardio, skills, exerciseMuscles, muscleGroups, weekStart, overrides, targets } = args
   const date = args.date ?? today()
   const trackedSet = args.trackedMuscleIds && args.trackedMuscleIds.length > 0
     ? new Set(args.trackedMuscleIds)
@@ -160,17 +165,19 @@ export function adaptationCoverage(
 
   const out = {} as Record<Adaptation, AdaptationSummary>
   for (const meta of ADAPTATIONS) {
-    const isResistance = meta.modality === 'resistance' && meta.weeklyMuscleTarget > 0
+    const muscleTarget = targets?.[meta.key]?.weeklyMuscleTarget ?? meta.weeklyMuscleTarget
+    const sessionTarget = targets?.[meta.key]?.weeklySessionTarget ?? meta.weeklySessionTarget
+    const isResistance = meta.modality === 'resistance' && muscleTarget > 0
     const byGroup = muscle[meta.key]
     const muscles = isResistance
-      ? buildMuscleStatusTree(byGroup, muscleGroups, meta.weeklyMuscleTarget)
+      ? buildMuscleStatusTree(byGroup, muscleGroups, muscleTarget)
       : []
     // Judge completion against the tracked subset (or all muscles if none set).
     const relevant = trackedSet ? muscles.filter(m => trackedSet.has(m.id)) : muscles
     const onTrack = relevant.filter(m => m.status === 'on_track').length
     const met = isResistance
       ? relevant.length > 0 && onTrack === relevant.length
-      : volume[meta.key] >= meta.weeklySessionTarget && meta.weeklySessionTarget > 0
+      : volume[meta.key] >= sessionTarget && sessionTarget > 0
     out[meta.key] = {
       key: meta.key,
       volume: volume[meta.key],
@@ -179,7 +186,7 @@ export function adaptationCoverage(
       onTrack,
       worked: relevant.filter(m => m.status !== 'untouched').length,
       totalMuscles: relevant.length,
-      sessionTarget: meta.weeklySessionTarget,
+      sessionTarget,
       met,
     }
   }
