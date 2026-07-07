@@ -6,7 +6,7 @@ import {
   adaptationCoverage,
   buildMuscleStatusTree,
 } from '../lib/adaptations'
-import type { CardioEntry, ExerciseMuscleLink, MuscleGroup, WeightEntry } from '../types'
+import type { CardioEntry, ExerciseMuscleLink, Habit, HabitCompletion, MuscleGroup, WeightEntry } from '../types'
 
 // ── classifyWeightSet ─────────────────────────────────────────────────────────
 
@@ -136,5 +136,25 @@ describe('adaptationCoverage', () => {
       date: '2025-01-07',
     })
     expect(cov.strength.volume).toBe(0)
+  })
+
+  it('folds manual exercise-linked habit ticks into the exercise\'s adaptation', () => {
+    const boxJumpHabit: Habit = {
+      id: 'hb', name: 'Box Jumps', cadence: 'daily', targetCount: 1, autoSource: 'none',
+      countLevel: 1, contribution: 'stimulus', singleTick: true, active: true, sortOrder: 0, exerciseId: 'bj',
+    }
+    const comps: HabitCompletion[] = [
+      { id: 'c1', habitId: 'hb', periodStart: '2025-01-02', count: 2 },
+      { id: 'c2', habitId: 'hb', periodStart: '2024-12-30', count: 5 }, // outside window → excluded
+    ]
+    const cov = adaptationCoverage({
+      weights: [], cardio: [], skills: [],
+      exerciseMuscles: links, muscleGroups: groups,
+      weekStart: '2025-01-01', date: '2025-01-07',
+      habits: [boxJumpHabit], habitCompletions: comps, exerciseNames: { bj: 'Box Jump' },
+    })
+    expect(cov.power.volume).toBe(2) // Box Jump → power (keyword), 2 in-week ticks
+    const shoulders = cov.power.muscles.find(m => m.id === 'shoulders')!
+    expect(shoulders.aggSets).toBe(2) // Front Delt L1 × 2, rolled up to Shoulders
   })
 })

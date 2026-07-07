@@ -9,14 +9,14 @@ function fmt(n: number): string {
 }
 
 export function MuscleCoverageCard() {
-  const { weights, mobility, exerciseMuscles, muscleGroups } = useAppStore()
+  const { weights, mobility, exerciseMuscles, muscleGroups, habits, habitCompletions, exerciseNames } = useAppStore()
   const { weekStartDay } = usePrefs()
   const weekStart = startOfWeek(today(), weekStartDay)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
   const rows = useMemo(
-    () => muscleCoverage(weights, mobility, exerciseMuscles, muscleGroups, weekStart),
-    [weights, mobility, exerciseMuscles, muscleGroups, weekStart],
+    () => muscleCoverage(weights, mobility, exerciseMuscles, muscleGroups, weekStart, today(), habits, habitCompletions, exerciseNames),
+    [weights, mobility, exerciseMuscles, muscleGroups, weekStart, habits, habitCompletions, exerciseNames],
   )
 
   const byId = useMemo(() => new Map(rows.map(r => [r.id, r])), [rows])

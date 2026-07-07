@@ -1,7 +1,7 @@
 import type {
   WeightEntry, Program, ProgramDay, ProgramWeekOverride, MobilityEntry, DayOfWeek,
   Habit, HabitCompletion, HabitCadence, HabitProgress, ExerciseMuscleLink, MuscleGroup,
-  WaterEntry, CardioEntry,
+  MuscleContribution, WaterEntry, CardioEntry,
 } from '../types'
 
 export type GroupedExercise =
@@ -478,6 +478,45 @@ export function habitProgress(
 /** Impact weight per link level (1 = most direct). */
 export const LEVEL_WEIGHT: Record<number, number> = { 1: 1, 2: 0.5, 3: 0.25 }
 
+/** One muscle a habit tick credits, with its impact level & stimulus/recovery side. */
+export interface HabitMuscleContribution {
+  group: string
+  level: 1 | 2 | 3
+  contribution: MuscleContribution
+}
+
+/**
+ * The muscle-group impact of ticking a manual habit once, honouring "log an
+ * exercise, count its overall impact":
+ * - Exercise-linked habits fold into that exercise's full muscle map, keeping
+ *   each link's own level & stimulus/recovery contribution (so a dual-purpose
+ *   exercise like Dead Hang credits grip stimulus *and* shoulder recovery).
+ * - Muscle-linked habits credit that single group, with the direction taken
+ *   from the habit's own `contribution` and impact from its `countLevel`.
+ * Auto-sourced habits are intentionally excluded by the caller (their progress
+ * already derives from real weight/mobility logs — folding them double-counts).
+ */
+export function habitMuscleContributions(
+  habit: Habit,
+  exerciseMuscles: ExerciseMuscleLink[],
+  muscleGroups: MuscleGroup[],
+  exerciseNames: Record<string, string>,
+): HabitMuscleContribution[] {
+  if (habit.exerciseId) {
+    const name = exerciseNames[habit.exerciseId]?.toLowerCase()
+    if (!name) return []
+    return exerciseMuscles
+      .filter(l => l.exercise.toLowerCase() === name)
+      .map(l => ({ group: l.group, level: l.level, contribution: l.contribution }))
+  }
+  if (habit.muscleGroupId) {
+    const g = muscleGroups.find(mg => mg.id === habit.muscleGroupId)
+    if (!g) return []
+    return [{ group: g.name, level: habit.countLevel, contribution: habit.contribution }]
+  }
+  return []
+}
+
 export interface MuscleCoverageRow {
   id: string
   name: string
@@ -499,6 +538,9 @@ export function muscleCoverage(
   muscleGroups: MuscleGroup[],
   weekStartDate: string,
   date: string = today(),
+  habits: Habit[] = [],
+  habitCompletions: HabitCompletion[] = [],
+  exerciseNames: Record<string, string> = {},
 ): MuscleCoverageRow[] {
   const byExercise = new Map<string, ExerciseMuscleLink[]>()
   for (const l of exerciseMuscles) {
@@ -528,6 +570,19 @@ export function muscleCoverage(
       const links = byExercise.get(e.name.toLowerCase())
       if (links) for (const l of links) if (l.contribution === 'recovery') groups.add(l.group)
       for (const g of groups) rec[g] = (rec[g] ?? 0) + e.duration
+    }
+  }
+
+  // Manual habit completions. Auto-sourced habits already derive from real
+  // weight/mobility logs (counted above), so only fold `none` habits here.
+  const habitById = new Map(habits.map(h => [h.id, h]))
+  for (const c of habitCompletions) {
+    if (c.count <= 0 || c.periodStart < weekStartDate || c.periodStart > date) continue
+    const h = habitById.get(c.habitId)
+    if (!h || !h.active || h.autoSource !== 'none') continue
+    for (const mc of habitMuscleContributions(h, exerciseMuscles, muscleGroups, exerciseNames)) {
+      if (mc.contribution === 'recovery') rec[mc.group] = (rec[mc.group] ?? 0) + c.count
+      else stim[mc.group] = (stim[mc.group] ?? 0) + c.count * (LEVEL_WEIGHT[mc.level] ?? 0)
     }
   }
 

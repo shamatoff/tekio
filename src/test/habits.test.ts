@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { habitPeriodStart, habitProgress, muscleCoverage } from '../lib/utils'
 import type { HabitProgressContext } from '../lib/utils'
 import type {
-  Habit, ExerciseMuscleLink, MuscleGroup, WeightEntry, MobilityEntry,
+  Habit, HabitCompletion, ExerciseMuscleLink, MuscleGroup, WeightEntry, MobilityEntry,
 } from '../types'
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
@@ -138,5 +138,41 @@ describe('muscleCoverage', () => {
     expect(chest.recovery).toBe(5)   // pec stretch recovery minutes
     const triceps = rows.find(r => r.name === 'Triceps')!
     expect(triceps.stimulus).toBe(2) // 4 sets × level-2 weight (0.5)
+  })
+
+  it('manual recovery habit adds recovery credit to its linked muscle group', () => {
+    const habits: Habit[] = [
+      habit({ id: 'hr', autoSource: 'none', contribution: 'recovery', muscleGroupId: 'chest', countLevel: 1 }),
+    ]
+    const comps: HabitCompletion[] = [
+      { id: 'c1', habitId: 'hr', periodStart: '2026-06-23', count: 1 },
+      { id: 'c2', habitId: 'hr', periodStart: '2026-06-24', count: 1 },
+      { id: 'c3', habitId: 'hr', periodStart: '2026-06-15', count: 1 }, // outside week → excluded
+    ]
+    const rows = muscleCoverage([], [], exerciseMuscles, muscleGroups, '2026-06-22', '2026-06-28', habits, comps, {})
+    const chest = rows.find(r => r.name === 'Chest')!
+    expect(chest.recovery).toBe(2) // two in-week ticks
+    expect(chest.stimulus).toBe(0)
+  })
+
+  it('exercise-linked habit folds the exercise\'s own muscle map (dual purpose)', () => {
+    // Habit's own contribution is 'recovery', but Bench Press links are all stimulus:
+    // the exercise map wins, mirroring "log an exercise, count its overall impact".
+    const habits: Habit[] = [
+      habit({ id: 'hx', autoSource: 'none', exerciseId: 'ex1', muscleGroupId: null, contribution: 'recovery' }),
+    ]
+    const comps: HabitCompletion[] = [{ id: 'c1', habitId: 'hx', periodStart: '2026-06-23', count: 2 }]
+    const rows = muscleCoverage([], [], exerciseMuscles, muscleGroups, '2026-06-22', '2026-06-28', habits, comps, { ex1: 'Bench Press' })
+    expect(rows.find(r => r.name === 'Chest')!.stimulus).toBe(2)   // 2 ticks × L1 (1.0)
+    expect(rows.find(r => r.name === 'Triceps')!.stimulus).toBe(1) // 2 ticks × L2 (0.5)
+  })
+
+  it('auto-sourced habits are ignored so real logs are not double-counted', () => {
+    const habits: Habit[] = [
+      habit({ id: 'ha', autoSource: 'weight_sets', contribution: 'recovery', muscleGroupId: 'chest' }),
+    ]
+    const comps: HabitCompletion[] = [{ id: 'c1', habitId: 'ha', periodStart: '2026-06-23', count: 3 }]
+    const rows = muscleCoverage([], [], exerciseMuscles, muscleGroups, '2026-06-22', '2026-06-28', habits, comps, {})
+    expect(rows.find(r => r.name === 'Chest')!.recovery).toBe(0)
   })
 })

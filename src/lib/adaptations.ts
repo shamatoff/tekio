@@ -1,5 +1,6 @@
 import type {
   Adaptation, WeightEntry, CardioEntry, SkillEntry, ExerciseMuscleLink, MuscleGroup,
+  Habit, HabitCompletion,
 } from '../types'
 import { ADAPTATIONS, ADAPTATION_MAP, defaultAdaptationForExercise } from '../constants/adaptations'
 import { LEVEL_WEIGHT, today } from './utils'
@@ -109,6 +110,11 @@ export function adaptationCoverage(
      * to the built-in defaults on each adaptation's metadata.
      */
     targets?: Partial<Record<Adaptation, { weeklyMuscleTarget: number; weeklySessionTarget: number }>>
+    /** Manual habits + their completions, folded into resistance adaptations. */
+    habits?: Habit[]
+    habitCompletions?: HabitCompletion[]
+    /** exercise id → name, for resolving exercise-linked habits. */
+    exerciseNames?: Record<string, string>
   },
 ): Record<Adaptation, AdaptationSummary> {
   const { weights, cardio, skills, exerciseMuscles, muscleGroups, weekStart, overrides, targets } = args
@@ -161,6 +167,29 @@ export function adaptationCoverage(
   for (const s of skills) {
     if (!inRange(s.date, weekStart, date)) continue
     volume.skill += 1
+  }
+
+  // Manual habit completions that produce a stimulus. Recovery contributions
+  // aren't one of the nine adaptations, so they're ignored here (they surface on
+  // the Muscle Coverage recovery axis instead). A repless habit can only be
+  // classified via its exercise's adaptation tag, so muscle-linked stimulus
+  // habits — which have no exercise, hence no adaptation — are skipped.
+  const habitById = new Map((args.habits ?? []).map(h => [h.id, h]))
+  const exerciseNames = args.exerciseNames ?? {}
+  for (const c of args.habitCompletions ?? []) {
+    if (c.count <= 0 || !inRange(c.periodStart, weekStart, date)) continue
+    const h = habitById.get(c.habitId)
+    if (!h || !h.active || h.autoSource !== 'none' || !h.exerciseId) continue
+    const name = exerciseNames[h.exerciseId]?.toLowerCase()
+    if (!name) continue
+    const a = resolveExerciseAdaptation(name, overrides)
+    if (!a) continue
+    const stimLinks = (linksByExercise.get(name) ?? [])
+    if (stimLinks.length === 0) continue
+    volume[a] += c.count
+    for (const l of stimLinks) {
+      muscle[a][l.group] = (muscle[a][l.group] ?? 0) + c.count * (LEVEL_WEIGHT[l.level] ?? 0)
+    }
   }
 
   const out = {} as Record<Adaptation, AdaptationSummary>
