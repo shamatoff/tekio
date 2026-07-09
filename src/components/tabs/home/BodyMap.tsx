@@ -1,40 +1,71 @@
-import type { MuscleStatusRow } from '../../../lib/adaptations'
+import type { MuscleStatus, MuscleStatusRow } from '../../../lib/adaptations'
 import { STATUS_STYLE } from './MuscleStatusList'
 
 const NEUTRAL = '#e2e8f0'
 const OUTLINE = '#94a3b8'
 
+const RANK: Record<MuscleStatus, number> = { on_track: 2, needs_work: 1, untouched: 0 }
+
 /**
- * Schematic front/back figure whose six zones (Shoulders, Chest/Back, Arms,
- * Core, Legs) are tinted by their weekly status for the selected adaptation.
- * Zones are keyed to the top-level muscle groups shown in the bar list.
+ * Schematic front/back figure whose zones (Shoulders, Chest/Back, Arms, Core,
+ * Legs) are tinted by their weekly status for the selected adaptation. The arm
+ * is split so the upper arm follows Biceps/Triceps and the forearm follows
+ * Forearms — otherwise training only grip lights up the whole arm.
  */
 export function BodyMap({ muscles }: { muscles: MuscleStatusRow[] }) {
-  const statusByName = new Map(muscles.map(m => [m.name.toLowerCase(), m.status]))
-  const fill = (group: string) => {
-    const st = statusByName.get(group.toLowerCase())
-    return st ? STATUS_STYLE[st].bar : NEUTRAL
+  const topByName = new Map(muscles.map(m => [m.name.toLowerCase(), m]))
+
+  const tint = (st: MuscleStatus | undefined) => (st ? STATUS_STYLE[st].bar : NEUTRAL)
+
+  /** Fill for a top-level zone by its own rolled-up status. */
+  const fill = (group: string) => tint(topByName.get(group.toLowerCase())?.status)
+
+  /**
+   * Fill from specific child muscles of a top-level group (best status among
+   * them). Falls back to the parent's status when no such children exist, so
+   * setups without a child breakdown still colour correctly.
+   */
+  const fillChildren = (topName: string, childNames: string[]) => {
+    const top = topByName.get(topName.toLowerCase())
+    if (!top) return NEUTRAL
+    const wanted = childNames.map(n => n.toLowerCase())
+    const kids = top.children.filter(c => wanted.includes(c.name.toLowerCase()))
+    if (kids.length === 0) return tint(top.status)
+    const best = kids.reduce<MuscleStatus>((acc, c) => (RANK[c.status] > RANK[acc] ? c.status : acc), 'untouched')
+    return tint(best)
+  }
+
+  const armFill = {
+    upper: fillChildren('Arms', ['Biceps', 'Triceps']),
+    fore: fillChildren('Arms', ['Forearms']),
   }
 
   return (
     <div className="flex justify-center gap-6">
-      <Figure torso="Chest" label="Front" fill={fill} />
-      <Figure torso="Back" label="Back" fill={fill} />
+      <Figure torso="Chest" label="Front" fill={fill} arm={armFill} />
+      <Figure torso="Back" label="Back" fill={fill} arm={armFill} />
     </div>
   )
 }
 
-function Figure({ torso, label, fill }: { torso: 'Chest' | 'Back'; label: string; fill: (g: string) => string }) {
+function Figure({
+  torso, label, fill, arm,
+}: {
+  torso: 'Chest' | 'Back'
+  label: string
+  fill: (g: string) => string
+  arm: { upper: string; fore: string }
+}) {
   const zone = { stroke: OUTLINE, strokeWidth: 0.8 }
   return (
     <div className="flex flex-col items-center gap-1">
       <svg viewBox="0 0 120 226" className="w-24 h-auto" role="img" aria-label={`${label} body map`}>
-        {/* arms */}
+        {/* arms: upper (biceps/triceps) then forearm */}
         <g {...zone}>
-          <rect x="27" y="48" width="11" height="32" rx="5" fill={fill('Arms')} />
-          <rect x="24" y="79" width="10" height="30" rx="5" fill={fill('Arms')} />
-          <rect x="82" y="48" width="11" height="32" rx="5" fill={fill('Arms')} />
-          <rect x="86" y="79" width="10" height="30" rx="5" fill={fill('Arms')} />
+          <rect x="27" y="48" width="11" height="32" rx="5" fill={arm.upper} />
+          <rect x="24" y="79" width="10" height="30" rx="5" fill={arm.fore} />
+          <rect x="82" y="48" width="11" height="32" rx="5" fill={arm.upper} />
+          <rect x="86" y="79" width="10" height="30" rx="5" fill={arm.fore} />
         </g>
         {/* legs */}
         <g {...zone}>

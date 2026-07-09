@@ -48,18 +48,18 @@ export function AdaptationCard({ meta, summary, open, onToggle }: AdaptationCard
           <p className="text-[10px] text-muted -mt-0.5">{summary.unit}</p>
         </div>
         {isResistance ? (
-          <div className="shrink-0 text-right w-14">
+          <div className="shrink-0 text-right w-16">
             <p className="text-[11px] font-semibold tabular-nums text-primary">
               {summary.onTrack}/{summary.totalMuscles}
             </p>
-            <p className="text-[9px] text-muted -mt-0.5 leading-tight">on track</p>
+            <p className="text-[9px] text-muted -mt-0.5 leading-tight">muscle groups on track</p>
           </div>
         ) : summary.sessionTarget > 0 ? (
-          <div className="shrink-0 text-right w-14">
+          <div className="shrink-0 text-right w-16">
             <p className="text-[11px] font-semibold tabular-nums text-primary">
               {summary.volume}/{summary.sessionTarget}
             </p>
-            <p className="text-[9px] text-muted -mt-0.5 leading-tight">target</p>
+            <p className="text-[9px] text-muted -mt-0.5 leading-tight">of weekly target</p>
           </div>
         ) : null}
         <span className="text-muted text-xs shrink-0">{open ? '▾' : '▸'}</span>

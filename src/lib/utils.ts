@@ -478,6 +478,19 @@ export function habitProgress(
 /** Impact weight per link level (1 = most direct). */
 export const LEVEL_WEIGHT: Record<number, number> = { 1: 1, 2: 0.5, 3: 0.25 }
 
+/**
+ * Weighted-set quantity a single manual-habit completion contributes toward
+ * training stimulus / recovery. One completion is one *bout* of the habit, so it
+ * counts as a single set — its `count` is progress in the habit's own unit
+ * (seconds held, reps, ml), NOT a number of sets. Without this, a "hold 60 s"
+ * habit would land as 60 sets. Only habits explicitly measured in `sets` scale
+ * with count.
+ */
+export function habitCompletionSets(habit: Habit, count: number): number {
+  if (count <= 0) return 0
+  return habit.unit === 'sets' ? count : 1
+}
+
 /** One muscle a habit tick credits, with its impact level & stimulus/recovery side. */
 export interface HabitMuscleContribution {
   group: string
@@ -580,9 +593,11 @@ export function muscleCoverage(
     if (c.count <= 0 || c.periodStart < weekStartDate || c.periodStart > date) continue
     const h = habitById.get(c.habitId)
     if (!h || !h.active || h.autoSource !== 'none') continue
+    const nSets = habitCompletionSets(h, c.count)
+    if (nSets <= 0) continue
     for (const mc of habitMuscleContributions(h, exerciseMuscles, muscleGroups, exerciseNames)) {
-      if (mc.contribution === 'recovery') rec[mc.group] = (rec[mc.group] ?? 0) + c.count
-      else stim[mc.group] = (stim[mc.group] ?? 0) + c.count * (LEVEL_WEIGHT[mc.level] ?? 0)
+      if (mc.contribution === 'recovery') rec[mc.group] = (rec[mc.group] ?? 0) + nSets
+      else stim[mc.group] = (stim[mc.group] ?? 0) + nSets * (LEVEL_WEIGHT[mc.level] ?? 0)
     }
   }
 

@@ -9,8 +9,8 @@ import { BottomNav } from './BottomNav'
 import { AssistantFab } from '../assistant/AssistantFab'
 
 const TAB_TITLES: Record<string, string> = {
-  Home: 'Adaptations',
-  Overview: 'Overview',
+  Home: 'Home',
+  Adaptations: 'Adaptations',
   Program: 'Program',
   Weights: 'Weights',
   'Body Weight': 'Body Weight',

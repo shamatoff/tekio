@@ -144,7 +144,8 @@ describe('adaptationCoverage', () => {
       countLevel: 1, contribution: 'stimulus', singleTick: true, active: true, sortOrder: 0, exerciseId: 'bj',
     }
     const comps: HabitCompletion[] = [
-      { id: 'c1', habitId: 'hb', periodStart: '2025-01-02', count: 2 },
+      { id: 'c1', habitId: 'hb', periodStart: '2025-01-02', count: 1 },
+      { id: 'c3', habitId: 'hb', periodStart: '2025-01-04', count: 1 },
       { id: 'c2', habitId: 'hb', periodStart: '2024-12-30', count: 5 }, // outside window → excluded
     ]
     const cov = adaptationCoverage({
@@ -153,8 +154,28 @@ describe('adaptationCoverage', () => {
       weekStart: '2025-01-01', date: '2025-01-07',
       habits: [boxJumpHabit], habitCompletions: comps, exerciseNames: { bj: 'Box Jump' },
     })
-    expect(cov.power.volume).toBe(2) // Box Jump → power (keyword), 2 in-week ticks
+    expect(cov.power.volume).toBe(2) // Box Jump → power (keyword), 2 in-week completions
     const shoulders = cov.power.muscles.find(m => m.id === 'shoulders')!
     expect(shoulders.aggSets).toBe(2) // Front Delt L1 × 2, rolled up to Shoulders
+  })
+
+  it('counts a timed-hold habit completion as one set, not its duration', () => {
+    // A "hold 60 s" habit stores count = 60 (seconds). It must land as a single
+    // set of stimulus, not 60 — regression guard for the duration-as-sets bug.
+    const holdHabit: Habit = {
+      id: 'dh', name: 'Dead Hang', cadence: 'daily', targetCount: 60, unit: 'sec', autoSource: 'none',
+      countLevel: 1, contribution: 'recovery', singleTick: true, active: true, sortOrder: 0, exerciseId: 'bj',
+    }
+    const cov = adaptationCoverage({
+      weights: [], cardio: [], skills: [],
+      exerciseMuscles: links, muscleGroups: groups,
+      weekStart: '2025-01-01', date: '2025-01-07',
+      habits: [holdHabit],
+      habitCompletions: [{ id: 'c1', habitId: 'dh', periodStart: '2025-01-02', count: 60 }],
+      exerciseNames: { bj: 'Box Jump' },
+    })
+    expect(cov.power.volume).toBe(1) // one completion → one set (was 60)
+    const shoulders = cov.power.muscles.find(m => m.id === 'shoulders')!
+    expect(shoulders.aggSets).toBe(1)
   })
 })

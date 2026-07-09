@@ -3,7 +3,7 @@ import type {
   Habit, HabitCompletion,
 } from '../types'
 import { ADAPTATIONS, ADAPTATION_MAP, defaultAdaptationForExercise } from '../constants/adaptations'
-import { LEVEL_WEIGHT, today } from './utils'
+import { LEVEL_WEIGHT, habitCompletionSets, today } from './utils'
 
 // ── Classification ─────────────────────────────────────────────────────────────
 
@@ -186,9 +186,13 @@ export function adaptationCoverage(
     if (!a) continue
     const stimLinks = (linksByExercise.get(name) ?? [])
     if (stimLinks.length === 0) continue
-    volume[a] += c.count
+    // One completion = one bout = one set; `count` is progress in the habit's own
+    // unit (e.g. seconds held), so it must not be summed as a set count.
+    const nSets = habitCompletionSets(h, c.count)
+    if (nSets <= 0) continue
+    volume[a] += nSets
     for (const l of stimLinks) {
-      muscle[a][l.group] = (muscle[a][l.group] ?? 0) + c.count * (LEVEL_WEIGHT[l.level] ?? 0)
+      muscle[a][l.group] = (muscle[a][l.group] ?? 0) + nSets * (LEVEL_WEIGHT[l.level] ?? 0)
     }
   }
 

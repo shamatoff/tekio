@@ -10,11 +10,11 @@ import { AdaptationCard } from './home/AdaptationCard'
 import { AdaptationGuide } from './home/AdaptationGuide'
 import { MuscleCoverageCard } from './home/MuscleCoverageCard'
 
-interface HomeTabProps {
+interface AdaptationsTabProps {
   setTab: (t: string) => void
 }
 
-export function HomeTab({ setTab }: HomeTabProps) {
+export function AdaptationsTab({ setTab }: AdaptationsTabProps) {
   const { weights, cardio, skills, exerciseMuscles, muscleGroups, exerciseAdaptations, adaptationTargets, habits, habitCompletions, exerciseNames } = useAppStore()
   const { weekStartDay, trackedMuscleGroupIds } = usePrefs()
   const weekStart = startOfWeek(today(), weekStartDay)
@@ -27,6 +27,8 @@ export function HomeTab({ setTab }: HomeTabProps) {
 
   const total = totalAdaptationVolume(coverage)
   const onTarget = ADAPTATIONS.filter(a => coverage[a.key].met).length
+  const liftingSets = ADAPTATIONS.filter(a => a.modality === 'resistance').reduce((s, a) => s + coverage[a.key].volume, 0)
+  const cardioSessions = ADAPTATIONS.filter(a => a.modality === 'cardio').reduce((s, a) => s + coverage[a.key].volume, 0)
 
   return (
     <div className="flex flex-col gap-4">
@@ -40,9 +42,15 @@ export function HomeTab({ setTab }: HomeTabProps) {
             <p className="text-3xl font-bold leading-none">{onTarget}<span className="text-lg text-white/50">/9</span></p>
             <p className="text-[11px] text-white/60 mt-1">on target this week</p>
           </div>
-          <div className="ml-auto text-right">
-            <p className="text-2xl font-bold leading-none">{total}</p>
-            <p className="text-[11px] text-white/60 mt-1">total sets + sessions</p>
+          <div className="ml-auto flex gap-5 text-right">
+            <div>
+              <p className="text-2xl font-bold leading-none">{liftingSets}</p>
+              <p className="text-[11px] text-white/60 mt-1">lifting sets</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold leading-none">{cardioSessions}</p>
+              <p className="text-[11px] text-white/60 mt-1">cardio sessions</p>
+            </div>
           </div>
         </div>
       </div>
@@ -51,7 +59,7 @@ export function HomeTab({ setTab }: HomeTabProps) {
         <Card>
           <p className="text-sm text-muted text-center py-2">
             Nothing logged this week yet.{' '}
-            <button onClick={() => setTab('Overview')} className="text-accent font-semibold">
+            <button onClick={() => setTab('Weights')} className="text-accent font-semibold">
               Log a session →
             </button>
           </p>
@@ -72,10 +80,16 @@ export function HomeTab({ setTab }: HomeTabProps) {
       </div>
 
       {/* Status legend */}
-      <div className="flex items-center justify-center gap-3 text-[10px] text-muted">
-        <span>🟢 on track</span>
-        <span>🟡 needs work</span>
-        <span>⚪ untouched</span>
+      <div className="flex flex-col items-center gap-1 text-[10px] text-muted">
+        <div className="flex items-center gap-3">
+          <span>🟢 on track</span>
+          <span>🟡 needs work</span>
+          <span>⚪ untouched</span>
+        </div>
+        <p className="text-center leading-tight">
+          Right-hand figure = muscle groups hitting their weekly set target (lifting),
+          or sessions vs. weekly target (cardio / skill).
+        </p>
       </div>
 
       <MuscleCoverageCard />
