@@ -129,6 +129,12 @@ export interface SleepEntry {
   hours: number
   /** Subjective sleep quality 1–5, or undefined if not rated. */
   quality?: SleepQuality
+  /** Garmin's objective Sleep Score (0–100), or undefined for manual-only nights. */
+  score?: number
+  /** Garmin's categorical label (EXCELLENT / GOOD / FAIR / POOR). */
+  scoreQualifier?: string
+  /** Row provenance: hand-logged vs. pulled from the Garmin daily sync. */
+  source?: 'manual' | 'garmin'
   notes?: string
 }
 

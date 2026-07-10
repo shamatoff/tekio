@@ -4,42 +4,60 @@ import type { SleepEntry, SaunaEntry, ColdEntry, SleepQuality } from '../../type
 
 // ── Sleep (sleep_logs: log_date / duration_hours / quality) ─────────────────
 
-export async function loadSleep(): Promise<SleepEntry[]> {
-  const { data, error } = await supabase
-    .from('sleep_logs')
-    .select('id, log_date, duration_hours, quality, notes')
-    .eq('user_id', USER_ID)
-    .order('log_date', { ascending: false })
-  if (error) throw error
-  return (data ?? []).map(r => ({
+type SleepRow = {
+  id: string
+  log_date: string
+  duration_hours: number | string | null
+  quality: number | null
+  sleep_score: number | null
+  sleep_score_qualifier: string | null
+  source: string | null
+  notes: string | null
+}
+
+const SLEEP_COLS = 'id, log_date, duration_hours, quality, sleep_score, sleep_score_qualifier, source, notes'
+
+function mapSleep(r: SleepRow): SleepEntry {
+  return {
     id: r.id,
     date: r.log_date,
     hours: r.duration_hours != null ? Number(r.duration_hours) : 0,
     quality: r.quality != null ? (r.quality as SleepQuality) : undefined,
+    score: r.sleep_score != null ? Number(r.sleep_score) : undefined,
+    scoreQualifier: r.sleep_score_qualifier ?? undefined,
+    source: r.source === 'garmin' ? 'garmin' : 'manual',
     notes: r.notes ?? undefined,
-  }))
+  }
+}
+
+export async function loadSleep(): Promise<SleepEntry[]> {
+  const { data, error } = await supabase
+    .from('sleep_logs')
+    .select(SLEEP_COLS)
+    .eq('user_id', USER_ID)
+    .order('log_date', { ascending: false })
+  if (error) throw error
+  return (data ?? []).map(mapSleep)
 }
 
 export async function saveSleepEntry(entry: Omit<SleepEntry, 'id'>): Promise<SleepEntry> {
+  // Upsert on the per-night key: if the daily Garmin sync already created this
+  // night, a manual add updates the subjective fields and leaves the objective
+  // sleep_score untouched (it isn't in the payload).
   const { data, error } = await supabase
     .from('sleep_logs')
-    .insert({
+    .upsert({
       user_id: USER_ID,
       log_date: entry.date,
       duration_hours: entry.hours,
       quality: entry.quality ?? null,
+      source: 'manual',
       notes: entry.notes ?? null,
-    })
-    .select('id, log_date, duration_hours, quality, notes')
+    }, { onConflict: 'user_id,log_date' })
+    .select(SLEEP_COLS)
     .single()
   if (error) throw error
-  return {
-    id: data.id,
-    date: data.log_date,
-    hours: data.duration_hours != null ? Number(data.duration_hours) : 0,
-    quality: data.quality != null ? (data.quality as SleepQuality) : undefined,
-    notes: data.notes ?? undefined,
-  }
+  return mapSleep(data as SleepRow)
 }
 
 export async function updateSleepEntry(id: string, patch: Omit<SleepEntry, 'id'>): Promise<void> {
