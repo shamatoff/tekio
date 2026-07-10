@@ -18,6 +18,10 @@ import type {
   SportEntry,
   DonationEntry,
   WaterEntry,
+  SleepEntry,
+  SaunaEntry,
+  ColdEntry,
+  SleepQuality,
   LiftSet,
   MobilityExercise,
   QualityRating,
@@ -624,6 +628,158 @@ function WaterForm({ record, onClose, saveRef }: { record: WaterEntry; onClose: 
   )
 }
 
+// ── Recovery: delete affordance ─────────────────────────────────────────────
+// Recovery modalities have no history tab, so their edit modals carry their own
+// delete button.
+
+function DeleteRow({ onDelete }: { onDelete: () => void }) {
+  return (
+    <button
+      onClick={onDelete}
+      className="text-xs text-danger font-medium self-start mt-1 active:scale-95 transition-transform"
+    >
+      🗑 Delete entry
+    </button>
+  )
+}
+
+// ── SleepForm ─────────────────────────────────────────────────────────────────
+
+const SLEEP_STARS: SleepQuality[] = [1, 2, 3, 4, 5]
+
+function SleepForm({ record, onClose, saveRef }: { record: SleepEntry; onClose: () => void; saveRef: { current: () => void } }) {
+  const editSleepEntry = useAppStore(s => s.editSleepEntry)
+  const removeSleepEntry = useAppStore(s => s.removeSleepEntry)
+  const setToast = useAppStore(s => s.setToast)
+  const [date, setDate] = useState(record.date)
+  const [hours, setHours] = useState(String(record.hours))
+  const [quality, setQuality] = useState<SleepQuality | 0>(record.quality ?? 0)
+  const [notes, setNotes] = useState(record.notes ?? '')
+
+  const save = async () => {
+    if (!hours) return
+    try {
+      await editSleepEntry(record.id, { date, hours: +hours, quality: quality || undefined, notes: notes || undefined })
+      setToast('✅ Updated!')
+      onClose()
+    } catch {
+      setToast('❌ Failed to update.')
+    }
+  }
+  saveRef.current = save
+
+  const del = async () => {
+    try {
+      await removeSleepEntry(record.id)
+      setToast('🗑 Deleted')
+      onClose()
+    } catch {
+      setToast('❌ Failed to delete.')
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-2 gap-2.5">
+        <Inp label="Date" type="date" value={date} onChange={e => setDate(e.target.value)} />
+        <Inp label="Hours" type="number" value={hours} onChange={e => setHours(e.target.value)} step="0.25" min="0" placeholder="7.5" />
+      </div>
+      <div>
+        <p className="text-xs text-muted font-medium mb-1">Quality (opt.)</p>
+        <div className="flex gap-1 items-center">
+          {SLEEP_STARS.map(s => (
+            <button
+              key={s}
+              onClick={() => setQuality(q => (q === s ? 0 : s))}
+              className={`text-2xl transition-colors ${s <= quality ? 'text-warning' : 'text-border'}`}
+            >
+              ★
+            </button>
+          ))}
+          {quality > 0 && <span className="text-xs text-muted ml-1">{quality}/5</span>}
+        </div>
+      </div>
+      <Inp label="Notes (opt.)" value={notes} onChange={e => setNotes(e.target.value)} placeholder="e.g. woke up once" />
+      <DeleteRow onDelete={del} />
+    </div>
+  )
+}
+
+// ── SaunaForm / ColdForm (shared session shape) ─────────────────────────────
+
+function SessionEditForm({
+  record, onClose, saveRef, tempPlaceholder, onEdit, onRemove,
+}: {
+  record: SaunaEntry | ColdEntry
+  onClose: () => void
+  saveRef: { current: () => void }
+  tempPlaceholder: string
+  onEdit: (id: string, patch: { date: string; duration: number; tempC?: number; notes?: string }) => Promise<void>
+  onRemove: (id: string) => Promise<void>
+}) {
+  const setToast = useAppStore(s => s.setToast)
+  const [date, setDate] = useState(record.date)
+  const [duration, setDuration] = useState(String(record.duration))
+  const [temp, setTemp] = useState(record.tempC != null ? String(record.tempC) : '')
+  const [notes, setNotes] = useState(record.notes ?? '')
+
+  const save = async () => {
+    if (!duration) return
+    try {
+      await onEdit(record.id, { date, duration: +duration, tempC: temp ? +temp : undefined, notes: notes || undefined })
+      setToast('✅ Updated!')
+      onClose()
+    } catch {
+      setToast('❌ Failed to update.')
+    }
+  }
+  saveRef.current = save
+
+  const del = async () => {
+    try {
+      await onRemove(record.id)
+      setToast('🗑 Deleted')
+      onClose()
+    } catch {
+      setToast('❌ Failed to delete.')
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-3 gap-2.5">
+        <Inp label="Date" type="date" value={date} onChange={e => setDate(e.target.value)} />
+        <Inp label="Minutes" type="number" value={duration} onChange={e => setDuration(e.target.value)} step="1" min="0" placeholder="15" />
+        <Inp label="°C (opt.)" type="number" value={temp} onChange={e => setTemp(e.target.value)} step="1" placeholder={tempPlaceholder} />
+      </div>
+      <Inp label="Notes (opt.)" value={notes} onChange={e => setNotes(e.target.value)} placeholder="Optional notes" />
+      <DeleteRow onDelete={del} />
+    </div>
+  )
+}
+
+function SaunaForm({ record, onClose, saveRef }: { record: SaunaEntry; onClose: () => void; saveRef: { current: () => void } }) {
+  const editSaunaEntry = useAppStore(s => s.editSaunaEntry)
+  const removeSaunaEntry = useAppStore(s => s.removeSaunaEntry)
+  return (
+    <SessionEditForm
+      record={record} onClose={onClose} saveRef={saveRef} tempPlaceholder="80"
+      onEdit={editSaunaEntry} onRemove={removeSaunaEntry}
+    />
+  )
+}
+
+function ColdForm({ record, onClose, saveRef }: { record: ColdEntry; onClose: () => void; saveRef: { current: () => void } }) {
+  const editColdEntry = useAppStore(s => s.editColdEntry)
+  const removeColdEntry = useAppStore(s => s.removeColdEntry)
+  return (
+    <SessionEditForm
+      record={record} onClose={onClose} saveRef={saveRef} tempPlaceholder="10"
+      onEdit={editColdEntry} onRemove={removeColdEntry}
+    />
+  )
+}
+
 // ── Main EditModal ────────────────────────────────────────────────────────────
 
 const TITLES: Record<string, string> = {
@@ -635,6 +791,9 @@ const TITLES: Record<string, string> = {
   sport: 'Edit Sport Session',
   donation: 'Edit Donation',
   water: 'Edit Water Entry',
+  sleep: 'Edit Sleep',
+  sauna: 'Edit Sauna Session',
+  cold: 'Edit Cold Session',
   habit: 'Edit Habit',
 }
 
@@ -678,6 +837,15 @@ export function EditModal() {
       )}
       {editModal?.type === 'water' && (
         <WaterForm record={editModal.record} onClose={closeEditModal} saveRef={saveRef} />
+      )}
+      {editModal?.type === 'sleep' && (
+        <SleepForm record={editModal.record} onClose={closeEditModal} saveRef={saveRef} />
+      )}
+      {editModal?.type === 'sauna' && (
+        <SaunaForm record={editModal.record} onClose={closeEditModal} saveRef={saveRef} />
+      )}
+      {editModal?.type === 'cold' && (
+        <ColdForm record={editModal.record} onClose={closeEditModal} saveRef={saveRef} />
       )}
       {editModal?.type === 'habit' && (
         <HabitForm record={editModal.record} onDone={closeEditModal} saveRef={saveRef} />

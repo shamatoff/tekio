@@ -33,6 +33,7 @@ const SECTION_META: Record<string, { icon: string; label: string }> = {
   Donations:    { icon: '🩸', label: 'Donations' },
   Water:        { icon: '💧', label: 'Water' },
   Habits:       { icon: '✅', label: 'Habits' },
+  Recovery:     { icon: '🔋', label: 'Recovery' },
 }
 
 // ─── Toggle pill ────────────────────────────────────────────────────────────

@@ -10,6 +10,9 @@ import type {
   NewSportFlags,
   DonationEntry,
   WaterEntry,
+  SleepEntry,
+  SaunaEntry,
+  ColdEntry,
   Program,
   Habit,
   EditModalTarget,
@@ -44,6 +47,11 @@ import { loadMobility, saveMobilityEntry, deleteMobilityEntry, updateMobilityEnt
 import { loadSports, loadSportTypes, saveSportEntry, deleteSportEntry, updateSportEntry } from '../lib/db/sport'
 import { loadDonations, saveDonationEntry, deleteDonationEntry, updateDonationEntry } from '../lib/db/donations'
 import { loadWater, saveWaterEntry, deleteWaterEntry, updateWaterEntry } from '../lib/db/water'
+import {
+  loadSleep, saveSleepEntry, updateSleepEntry, deleteSleepEntry,
+  loadSauna, saveSaunaEntry, updateSaunaEntry, deleteSaunaEntry,
+  loadCold, saveColdEntry, updateColdEntry, deleteColdEntry,
+} from '../lib/db/recovery'
 import { usePrefs } from './prefs'
 import type { LiftSet, DayOfWeek } from '../types'
 
@@ -64,6 +72,9 @@ interface AppStore extends AppState {
   setSportTypes: (sportTypes: AppState['sportTypes']) => void
   setDonations: (donations: AppState['donations']) => void
   setWater: (water: AppState['water']) => void
+  setSleep: (sleep: AppState['sleep']) => void
+  setSauna: (sauna: AppState['sauna']) => void
+  setCold: (cold: AppState['cold']) => void
   setToast: (msg: string) => void
 
   bootstrap: () => Promise<void>
@@ -111,6 +122,21 @@ interface AppStore extends AppState {
   addWaterEntry: (entry: Omit<WaterEntry, 'id'>) => Promise<void>
   removeWaterEntry: (id: string) => Promise<void>
   editWaterEntry: (id: string, patch: Omit<WaterEntry, 'id'>) => Promise<void>
+
+  // Recovery — Sleep
+  addSleepEntry: (entry: Omit<SleepEntry, 'id'>) => Promise<void>
+  removeSleepEntry: (id: string) => Promise<void>
+  editSleepEntry: (id: string, patch: Omit<SleepEntry, 'id'>) => Promise<void>
+
+  // Recovery — Sauna
+  addSaunaEntry: (entry: Omit<SaunaEntry, 'id'>) => Promise<void>
+  removeSaunaEntry: (id: string) => Promise<void>
+  editSaunaEntry: (id: string, patch: Omit<SaunaEntry, 'id'>) => Promise<void>
+
+  // Recovery — Cold
+  addColdEntry: (entry: Omit<ColdEntry, 'id'>) => Promise<void>
+  removeColdEntry: (id: string) => Promise<void>
+  editColdEntry: (id: string, patch: Omit<ColdEntry, 'id'>) => Promise<void>
 
   // Habits
   /** exercise id → name, for resolving exercise-linked habits. */
@@ -165,6 +191,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
   sportTypes: [],
   donations: [],
   water: [],
+  sleep: [],
+  sauna: [],
+  cold: [],
   programs: [],
   programHistory: [],
   weekOverrides: [],
@@ -192,6 +221,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
   setSportTypes: (sportTypes) => set({ sportTypes }),
   setDonations: (donations) => set({ donations }),
   setWater: (water) => set({ water }),
+  setSleep: (sleep) => set({ sleep }),
+  setSauna: (sauna) => set({ sauna }),
+  setCold: (cold) => set({ cold }),
   setToast: (toast) => {
     set({ toast })
     if (toast) setTimeout(() => set({ toast: '' }), 3000)
@@ -202,7 +234,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({ loading: true })
     try {
       await getOrCreateUser()
-      const [weights, activePrograms, programHistory, weekOverrides, bodyweight, cardio, mobility, muscleGroups, exerciseMuscles, exercises, habits, habitCompletions, sports, sportTypes, donations, water, adaptationTargets] = await Promise.all([
+      const [weights, activePrograms, programHistory, weekOverrides, bodyweight, cardio, mobility, muscleGroups, exerciseMuscles, exercises, habits, habitCompletions, sports, sportTypes, donations, water, sleep, sauna, cold, adaptationTargets] = await Promise.all([
         loadWeights(),
         loadActivePrograms(),
         loadProgramCycles(),
@@ -219,6 +251,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
         loadSportTypes(),
         loadDonations(),
         loadWater(),
+        loadSleep(),
+        loadSauna(),
+        loadCold(),
         loadAdaptationTargets(),
         usePrefs.getState().loadPrefs(),
       ])
@@ -237,6 +272,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
         sportTypes,
         donations,
         water,
+        sleep,
+        sauna,
+        cold,
         programs: activePrograms,
         programHistory,
         weekOverrides,
@@ -443,6 +481,60 @@ export const useAppStore = create<AppStore>((set, get) => ({
   editWaterEntry: async (id, patch) => {
     await updateWaterEntry(id, patch)
     set(s => ({ water: s.water.map(w => (w.id === id ? { ...w, ...patch } : w)) }))
+  },
+
+  // ── Recovery: Sleep ──────────────────────────────────────────────────────────
+  addSleepEntry: async (entry) => {
+    const saved = await saveSleepEntry(entry)
+    set(s => ({ sleep: [saved, ...s.sleep].sort((a, b) => b.date.localeCompare(a.date)) }))
+  },
+  removeSleepEntry: async (id) => {
+    await deleteSleepEntry(id)
+    set(s => ({ sleep: s.sleep.filter(e => e.id !== id) }))
+  },
+  editSleepEntry: async (id, patch) => {
+    await updateSleepEntry(id, patch)
+    set(s => ({
+      sleep: s.sleep
+        .map(e => (e.id === id ? { ...e, ...patch } : e))
+        .sort((a, b) => b.date.localeCompare(a.date)),
+    }))
+  },
+
+  // ── Recovery: Sauna ──────────────────────────────────────────────────────────
+  addSaunaEntry: async (entry) => {
+    const saved = await saveSaunaEntry(entry)
+    set(s => ({ sauna: [saved, ...s.sauna].sort((a, b) => b.date.localeCompare(a.date)) }))
+  },
+  removeSaunaEntry: async (id) => {
+    await deleteSaunaEntry(id)
+    set(s => ({ sauna: s.sauna.filter(e => e.id !== id) }))
+  },
+  editSaunaEntry: async (id, patch) => {
+    await updateSaunaEntry(id, patch)
+    set(s => ({
+      sauna: s.sauna
+        .map(e => (e.id === id ? { ...e, ...patch } : e))
+        .sort((a, b) => b.date.localeCompare(a.date)),
+    }))
+  },
+
+  // ── Recovery: Cold ───────────────────────────────────────────────────────────
+  addColdEntry: async (entry) => {
+    const saved = await saveColdEntry(entry)
+    set(s => ({ cold: [saved, ...s.cold].sort((a, b) => b.date.localeCompare(a.date)) }))
+  },
+  removeColdEntry: async (id) => {
+    await deleteColdEntry(id)
+    set(s => ({ cold: s.cold.filter(e => e.id !== id) }))
+  },
+  editColdEntry: async (id, patch) => {
+    await updateColdEntry(id, patch)
+    set(s => ({
+      cold: s.cold
+        .map(e => (e.id === id ? { ...e, ...patch } : e))
+        .sort((a, b) => b.date.localeCompare(a.date)),
+    }))
   },
 
   // ── Habits ───────────────────────────────────────────────────────────────────

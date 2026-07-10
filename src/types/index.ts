@@ -115,6 +115,43 @@ export interface WaterEntry {
   amountMl: number
 }
 
+// ── Recovery / Readiness axis ───────────────────────────────────────────────
+// Modalities that sit *parallel* to the nine Galpin adaptations (recovery is
+// deliberately not a 10th adaptation). Each is a simple user-scoped log.
+
+export type SleepQuality = 1 | 2 | 3 | 4 | 5
+
+/** One night's sleep. `date` is the wake-up (log) date. */
+export interface SleepEntry {
+  id: string
+  date: string
+  /** Total sleep duration in hours. */
+  hours: number
+  /** Subjective sleep quality 1–5, or undefined if not rated. */
+  quality?: SleepQuality
+  notes?: string
+}
+
+/** A single sauna bout. */
+export interface SaunaEntry {
+  id: string
+  date: string
+  duration: number
+  /** Temperature in °C, if tracked. */
+  tempC?: number
+  notes?: string
+}
+
+/** A single cold-exposure / plunge bout. */
+export interface ColdEntry {
+  id: string
+  date: string
+  duration: number
+  /** Temperature in °C, if tracked. */
+  tempC?: number
+  notes?: string
+}
+
 export type DonationType = 'Full Blood' | 'Plasma'
 
 export interface DonationEntry {
@@ -282,6 +319,9 @@ export interface AppState {
   sportTypes: SportTypeInfo[]
   donations: DonationEntry[]
   water: WaterEntry[]
+  sleep: SleepEntry[]
+  sauna: SaunaEntry[]
+  cold: ColdEntry[]
   programs: ActiveProgram[]
   programHistory: ProgramCycle[]
   weekOverrides: ProgramWeekOverride[]
@@ -300,4 +340,7 @@ export type EditModalTarget =
   | { type: 'sport'; record: SportEntry }
   | { type: 'donation'; record: DonationEntry }
   | { type: 'water'; record: WaterEntry }
+  | { type: 'sleep'; record: SleepEntry }
+  | { type: 'sauna'; record: SaunaEntry }
+  | { type: 'cold'; record: ColdEntry }
   | { type: 'habit'; record: Habit }

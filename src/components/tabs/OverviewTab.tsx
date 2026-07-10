@@ -8,6 +8,7 @@ import { WATER_GOAL_ML } from '../../constants/app'
 import { Card } from '../ui/Card'
 import { Chip } from '../ui/Chip'
 import { MiniChart } from '../ui/MiniChart'
+import { RecoveryCard } from './home/RecoveryCard'
 import { useCountUp } from '../../hooks/useCountUp'
 
 interface OverviewTabProps {
@@ -353,6 +354,12 @@ export function OverviewTab({ setTab }: OverviewTabProps) {
               <MiniChart data={cardioChart} color="#10b981" />
             </Card>
           ),
+        },
+        {
+          key: 'Recovery',
+          order: sectionOrder['Recovery'] ?? 8,
+          show: homeOn('Recovery'),
+          node: <RecoveryCard setTab={setTab} />,
         },
         {
           key: 'Water',

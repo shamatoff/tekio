@@ -47,3 +47,34 @@ export const DONATION_ELIGIBILITY_DAYS: Record<string, number> = {
 }
 
 export const SPORT_TYPES_DEFAULT = ['Tennis', 'Swimming', 'Volleyball']
+
+// ── Recovery / Readiness axis ───────────────────────────────────────────────
+// Recovery sits parallel to the nine adaptations (it is NOT a 10th adaptation).
+// The RecoveryCard rolls these weekly targets into a single readiness %.
+
+export const RECOVERY_ICONS = {
+  sleep: '😴',
+  mobility: '🧘',
+  sauna: '🧖',
+  cold: '🧊',
+} as const
+
+/** Weekly targets per modality; a modality's sub-score = achieved / target (capped at 1). */
+export const RECOVERY_TARGETS = {
+  /** Target average sleep hours per night. */
+  sleepHours: 8,
+  /** Target mobility minutes per week. */
+  mobilityMinutes: 30,
+  /** Target sauna sessions per week. */
+  saunaSessions: 2,
+  /** Target cold-exposure sessions per week. */
+  coldSessions: 2,
+} as const
+
+/** Weights blending the per-modality sub-scores into the readiness roll-up (sum ≈ 1). */
+export const RECOVERY_WEIGHTS = {
+  sleep: 0.5,
+  mobility: 0.2,
+  sauna: 0.15,
+  cold: 0.15,
+} as const

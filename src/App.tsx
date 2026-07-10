@@ -36,6 +36,9 @@ function TabContent({ tab, setTab }: { tab: Tab; setTab: (t: string) => void }) 
     case 'Habits': return <HabitsTab />
     case 'Profile': return <ProfileTab />
     case 'Admin': return <AdminTab />
+    // Recovery has no dedicated tab (Home-only card); fall back to Home so a stray
+    // section key can never render a blank screen.
+    default: return <OverviewTab setTab={setTab} />
   }
 }
 

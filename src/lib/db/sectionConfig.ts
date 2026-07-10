@@ -17,6 +17,9 @@ const DEFAULTS: SectionConfig[] = [
   { sectionKey: 'Donations',   showInMenu: true, showInHome: true, sortOrder: 5 },
   { sectionKey: 'Water',       showInMenu: true, showInHome: true, sortOrder: 6 },
   { sectionKey: 'Habits',      showInMenu: true, showInHome: true, sortOrder: 7 },
+  // Recovery has no dedicated tab — it lives only as a Home card (quick-add inline),
+  // so it is seeded Home-only. showInMenu stays false (no drawer/tab destination).
+  { sectionKey: 'Recovery',    showInMenu: false, showInHome: true, sortOrder: 8 },
 ]
 
 export async function loadSectionConfig(): Promise<SectionConfig[]> {
