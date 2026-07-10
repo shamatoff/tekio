@@ -2,14 +2,14 @@ import { useState } from 'react'
 import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar } from 'recharts'
 import { useAppStore } from '../../store/app'
 import { usePrefs } from '../../store/prefs'
-import { today, weekKey } from '../../lib/utils'
+import { today, weekKey, parseDurationMins, formatDurationMins } from '../../lib/utils'
 import { Card, SecTitle } from '../ui/Card'
 import { Inp } from '../ui/Input'
 import { Btn, DelBtn, EditBtn } from '../ui/Button'
 import { SmartInput } from '../ui/SmartInput'
 import { ChipListInput } from '../ui/ChipListInput'
 import { HistoryList } from '../ui/HistoryList'
-import type { QualityRating, MatchResult, NewSkillFlags } from '../../types'
+import type { QualityRating, MatchResult, NewSportFlags } from '../../types'
 
 const STARS = [1, 2, 3, 4, 5]
 const TIME_FRAMES = ['All time', 'Last 30 days', 'Last 90 days', 'This year'] as const
@@ -26,68 +26,73 @@ function withinTimeFrame(date: string, frame: TimeFrame): boolean {
   return d >= cutoff
 }
 
-export function SkillsTab() {
-  const [skill, setSkill] = useState('')
+export function SportsTab() {
+  const [sport, setSport] = useState('')
   const [date, setDate] = useState(today())
   const [withTrainer, setWithTrainer] = useState(false)
   const [quality, setQuality] = useState(0)
+  const [duration, setDuration] = useState('')
+  const [avgHr, setAvgHr] = useState('')
   const [notes, setNotes] = useState('')
   const [competitorNames, setCompetitorNames] = useState<string[]>([])
   const [result, setResult] = useState<MatchResult | ''>('')
   const [teammates, setTeammates] = useState<string[]>([])
-  const [newSkillHasCompetitor, setNewSkillHasCompetitor] = useState(false)
-  const [newSkillHasTeammate, setNewSkillHasTeammate] = useState(false)
-  const [selSkill, setSelSkill] = useState('')
+  const [newSportHasCompetitor, setNewSportHasCompetitor] = useState(false)
+  const [newSportHasTeammate, setNewSportHasTeammate] = useState(false)
+  const [selSport, setSelSport] = useState('')
   const [statsCompetitor, setStatsCompetitor] = useState('')
   const [statsTimeFrame, setStatsTimeFrame] = useState<TimeFrame>('All time')
-  const { skills, skillTypes, addSkillEntry, removeSkillEntry, openEditModal, setToast } = useAppStore()
+  const { sports, sportTypes, addSportEntry, removeSportEntry, openEditModal, setToast } = useAppStore()
   const { weekStartDay } = usePrefs()
 
-  const allSkills = [...new Set(skills.map(d => d.skill))].sort()
-  const allCompetitors = [...new Set(skills.flatMap(d => d.competitorNames ?? []))].sort()
-  const allTeammates = [...new Set(skills.flatMap(d => d.teammateNames ?? []))].sort()
-  const existingType = skillTypes.find(t => t.name.toLowerCase() === skill.trim().toLowerCase())
-  const isNewSkill = skill.trim() !== '' && !existingType
-  const hasCompetitor = existingType ? existingType.hasCompetitor : (isNewSkill && newSkillHasCompetitor)
-  const hasTeammate = existingType ? existingType.hasTeammate : (isNewSkill && newSkillHasTeammate)
+  const allSports = [...new Set(sports.map(d => d.sport))].sort()
+  const allCompetitors = [...new Set(sports.flatMap(d => d.competitorNames ?? []))].sort()
+  const allTeammates = [...new Set(sports.flatMap(d => d.teammateNames ?? []))].sort()
+  const existingType = sportTypes.find(t => t.name.toLowerCase() === sport.trim().toLowerCase())
+  const isNewSport = sport.trim() !== '' && !existingType
+  const hasCompetitor = existingType ? existingType.hasCompetitor : (isNewSport && newSportHasCompetitor)
+  const hasTeammate = existingType ? existingType.hasTeammate : (isNewSport && newSportHasTeammate)
 
-  const handleSelectSkill = (n: string) => {
-    setSkill(n)
-    setSelSkill(n)
-    const prev = skills.filter(d => d.skill.toLowerCase() === n.trim().toLowerCase())
+  const handleSelectSport = (n: string) => {
+    setSport(n)
+    setSelSport(n)
+    const prev = sports.filter(d => d.sport.toLowerCase() === n.trim().toLowerCase())
       .sort((a, b) => b.date.localeCompare(a.date))[0]
     if (prev) { setWithTrainer(prev.withTrainer); setQuality(prev.quality) }
   }
 
   const add = async () => {
-    if (!skill.trim()) return
-    const newSkillFlags: NewSkillFlags | undefined = isNewSkill
-      ? { hasCompetitor: newSkillHasCompetitor, hasTeammate: newSkillHasTeammate }
+    if (!sport.trim()) return
+    const newSportFlags: NewSportFlags | undefined = isNewSport
+      ? { hasCompetitor: newSportHasCompetitor, hasTeammate: newSportHasTeammate }
       : undefined
     try {
-      await addSkillEntry({
+      await addSportEntry({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        skill: skill.trim() as any,
+        sport: sport.trim() as any,
         date,
         withTrainer,
         quality: quality as QualityRating,
+        duration: parseDurationMins(duration) || undefined,
+        avgHr: avgHr ? +avgHr : undefined,
         notes,
         competitorNames: hasCompetitor ? (competitorNames.length ? competitorNames : undefined) : undefined,
         result: hasCompetitor ? (result || undefined) : undefined,
         teammateNames: hasTeammate ? teammates : undefined,
-      }, newSkillFlags)
-      setSkill(''); setNotes(''); setQuality(0); setWithTrainer(false)
+      }, newSportFlags)
+      setSport(''); setNotes(''); setQuality(0); setWithTrainer(false)
+      setDuration(''); setAvgHr('')
       setCompetitorNames([]); setResult(''); setTeammates([])
-      setNewSkillHasCompetitor(false); setNewSkillHasTeammate(false)
+      setNewSportHasCompetitor(false); setNewSportHasTeammate(false)
       setToast('✅ Session logged!')
     } catch {
       setToast('❌ Failed to save.')
     }
   }
 
-  const chartSkill = selSkill || allSkills[0] || ''
+  const chartSport = selSport || allSports[0] || ''
   const weekMap: Record<string, number> = {}
-  skills.filter(d => d.skill === chartSkill).forEach(d => {
+  sports.filter(d => d.sport === chartSport).forEach(d => {
     const wk = weekKey(d.date, weekStartDay)
     weekMap[wk] = (weekMap[wk] || 0) + 1
   })
@@ -95,13 +100,13 @@ export function SkillsTab() {
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([week, sessions]) => ({ week: week.slice(5), sessions }))
 
-  const chartSkillType = skillTypes.find(t => t.name.toLowerCase() === chartSkill.toLowerCase())
-  const chartHasCompetitor = chartSkillType?.hasCompetitor ?? false
-  const competitorsForChartSkill = [...new Set(
-    skills.filter(d => d.skill === chartSkill).flatMap(d => d.competitorNames ?? [])
+  const chartSportType = sportTypes.find(t => t.name.toLowerCase() === chartSport.toLowerCase())
+  const chartHasCompetitor = chartSportType?.hasCompetitor ?? false
+  const competitorsForChartSport = [...new Set(
+    sports.filter(d => d.sport === chartSport).flatMap(d => d.competitorNames ?? [])
   )].sort()
-  const statsEntries = skills.filter(d =>
-    d.skill === chartSkill &&
+  const statsEntries = sports.filter(d =>
+    d.sport === chartSport &&
     d.result &&
     withinTimeFrame(d.date, statsTimeFrame) &&
     (!statsCompetitor || (d.competitorNames ?? []).includes(statsCompetitor))
@@ -110,7 +115,7 @@ export function SkillsTab() {
   const losses = statsEntries.filter(d => d.result === 'loss').length
   const ties = statsEntries.filter(d => d.result === 'tie').length
 
-  const sortedSkills = [...skills].sort((a, b) => b.date.localeCompare(a.date))
+  const sortedSports = [...sports].sort((a, b) => b.date.localeCompare(a.date))
 
   return (
     <div className="flex flex-col gap-4">
@@ -118,23 +123,23 @@ export function SkillsTab() {
         <SecTitle>Log Session</SecTitle>
         <div className="flex flex-col gap-2.5 mb-3">
           <div>
-            <p className="text-xs text-muted font-medium mb-1">Skill</p>
+            <p className="text-xs text-muted font-medium mb-1">Sport</p>
             <SmartInput
-              value={skill}
-              onChange={handleSelectSkill}
-              suggestions={allSkills}
+              value={sport}
+              onChange={handleSelectSport}
+              suggestions={allSports}
               placeholder="e.g. Tennis, Swimming"
             />
           </div>
-          {isNewSkill && (
+          {isNewSport && (
             <div className="flex flex-col gap-1.5 px-3 py-2 rounded-lg bg-bg border border-border">
-              <p className="text-xs text-muted font-medium">New skill — what should this track?</p>
+              <p className="text-xs text-muted font-medium">New sport — what should this track?</p>
               <label className="flex items-center gap-2 text-xs text-primary">
-                <input type="checkbox" checked={newSkillHasCompetitor} onChange={e => setNewSkillHasCompetitor(e.target.checked)} />
+                <input type="checkbox" checked={newSportHasCompetitor} onChange={e => setNewSportHasCompetitor(e.target.checked)} />
                 Competitor (opponent + win/loss)
               </label>
               <label className="flex items-center gap-2 text-xs text-primary">
-                <input type="checkbox" checked={newSkillHasTeammate} onChange={e => setNewSkillHasTeammate(e.target.checked)} />
+                <input type="checkbox" checked={newSportHasTeammate} onChange={e => setNewSportHasTeammate(e.target.checked)} />
                 Teammate(s)
               </label>
             </div>
@@ -155,6 +160,24 @@ export function SkillsTab() {
                 ))}
               </div>
             </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2.5">
+            <Inp
+              label="Duration (MM:SS, opt.)"
+              type="text"
+              value={duration}
+              onChange={e => setDuration(e.target.value)}
+              placeholder="60:00"
+            />
+            <Inp
+              label="Avg HR (bpm, opt.)"
+              type="number"
+              value={avgHr}
+              onChange={e => setAvgHr(e.target.value)}
+              placeholder="130"
+              min="0"
+              step="1"
+            />
           </div>
           <div>
             <p className="text-xs text-muted font-medium mb-1">Quality</p>
@@ -204,15 +227,15 @@ export function SkillsTab() {
         <Btn onClick={add} className="w-full">Log Session</Btn>
       </Card>
 
-      {allSkills.length > 0 && (
+      {allSports.length > 0 && (
         <Card>
-          <SecTitle>Sessions per Week — {chartSkill}</SecTitle>
+          <SecTitle>Sessions per Week — {chartSport}</SecTitle>
           <select
-            value={chartSkill}
-            onChange={e => { setSelSkill(e.target.value); setStatsCompetitor('') }}
+            value={chartSport}
+            onChange={e => { setSelSport(e.target.value); setStatsCompetitor('') }}
             className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-surface text-primary mb-3 focus:outline-none"
           >
-            {allSkills.map(s => <option key={s}>{s}</option>)}
+            {allSports.map(s => <option key={s}>{s}</option>)}
           </select>
           {chartHasCompetitor && (
             <div className="flex flex-col gap-2.5 mb-3 px-3 py-2.5 rounded-lg bg-bg border border-border">
@@ -223,7 +246,7 @@ export function SkillsTab() {
                   className="border border-border rounded-lg px-2 py-1.5 text-xs bg-surface text-primary focus:outline-none"
                 >
                   <option value="">All competitors</option>
-                  {competitorsForChartSkill.map(c => <option key={c}>{c}</option>)}
+                  {competitorsForChartSport.map(c => <option key={c}>{c}</option>)}
                 </select>
                 <select
                   value={statsTimeFrame}
@@ -268,20 +291,20 @@ export function SkillsTab() {
       <Card>
         <SecTitle>Recent Sessions</SecTitle>
         <HistoryList
-          items={sortedSkills}
+          items={sortedSports}
           getDate={d => d.date}
-          categories={allSkills}
-          categoryLabel="Skill"
-          matchesCategory={(d, cat) => d.skill === cat}
+          categories={allSports}
+          categoryLabel="Sport"
+          matchesCategory={(d, cat) => d.sport === cat}
           emptyMessage="No sessions yet"
           renderItem={d => (
             <div key={d.id} className="pb-2 mb-2 border-b border-bg last:border-0 last:mb-0">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-semibold text-primary truncate">{d.skill}</span>
+                <span className="text-sm font-semibold text-primary truncate">{d.sport}</span>
                 <div className="flex items-center gap-1.5 shrink-0">
                   <span className="text-xs text-muted">{d.date}</span>
-                  <EditBtn onClick={() => openEditModal({ type: 'skill', record: d })} />
-                  <DelBtn onClick={() => removeSkillEntry(d.id)} />
+                  <EditBtn onClick={() => openEditModal({ type: 'sport', record: d })} />
+                  <DelBtn onClick={() => removeSportEntry(d.id)} />
                 </div>
               </div>
               {(d.withTrainer || d.quality > 0 || d.result) && (
@@ -300,6 +323,13 @@ export function SkillsTab() {
                     </span>
                   )}
                 </div>
+              )}
+              {(d.duration || d.avgHr) && (
+                <p className="text-xs text-muted mt-1">
+                  {d.duration ? `⏱️ ${formatDurationMins(d.duration)}` : ''}
+                  {d.duration && d.avgHr ? ' · ' : ''}
+                  {d.avgHr ? `❤️ ${d.avgHr} bpm` : ''}
+                </p>
               )}
               {d.competitorNames && d.competitorNames.length > 0 && <p className="text-xs text-muted mt-1">vs {d.competitorNames.join(', ')}</p>}
               {d.teammateNames && d.teammateNames.length > 0 && (

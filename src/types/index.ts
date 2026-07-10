@@ -78,29 +78,33 @@ export interface MobilityEntry {
   duration: number
 }
 
-export type SkillType = 'Tennis' | 'Swimming' | 'Volleyball'
+export type SportType = 'Tennis' | 'Swimming' | 'Volleyball'
 export type QualityRating = 1 | 2 | 3 | 4 | 5
 export type MatchResult = 'win' | 'loss' | 'tie'
 
-export interface SkillEntry {
+export interface SportEntry {
   id: string
   date: string
-  skill: SkillType
+  sport: SportType
   withTrainer: boolean
   quality: QualityRating
   notes: string
+  /** Session length in minutes. Drives the cardio-adaptation classification. */
+  duration?: number
+  /** Average heart rate (bpm) for the session. */
+  avgHr?: number
   competitorNames?: string[]
   result?: MatchResult
   teammateNames?: string[]
 }
 
-export interface SkillTypeInfo {
+export interface SportTypeInfo {
   name: string
   hasCompetitor: boolean
   hasTeammate: boolean
 }
 
-export interface NewSkillFlags {
+export interface NewSportFlags {
   hasCompetitor: boolean
   hasTeammate: boolean
 }
@@ -274,8 +278,8 @@ export interface AppState {
   bodyweight: BodyweightEntry[]
   cardio: CardioEntry[]
   mobility: MobilityEntry[]
-  skills: SkillEntry[]
-  skillTypes: SkillTypeInfo[]
+  sports: SportEntry[]
+  sportTypes: SportTypeInfo[]
   donations: DonationEntry[]
   water: WaterEntry[]
   programs: ActiveProgram[]
@@ -293,7 +297,7 @@ export type EditModalTarget =
   | { type: 'bodyweight'; record: BodyweightEntry }
   | { type: 'cardio'; record: CardioEntry }
   | { type: 'mobility'; record: MobilityEntry }
-  | { type: 'skill'; record: SkillEntry }
+  | { type: 'sport'; record: SportEntry }
   | { type: 'donation'; record: DonationEntry }
   | { type: 'water'; record: WaterEntry }
   | { type: 'habit'; record: Habit }

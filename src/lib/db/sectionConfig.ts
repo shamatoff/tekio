@@ -13,7 +13,7 @@ const DEFAULTS: SectionConfig[] = [
   { sectionKey: 'Body Weight', showInMenu: true, showInHome: true, sortOrder: 1 },
   { sectionKey: 'Cardio',      showInMenu: true, showInHome: true, sortOrder: 2 },
   { sectionKey: 'Mobility',    showInMenu: true, showInHome: true, sortOrder: 3 },
-  { sectionKey: 'Skills',      showInMenu: true, showInHome: true, sortOrder: 4 },
+  { sectionKey: 'Sports',      showInMenu: true, showInHome: true, sortOrder: 4 },
   { sectionKey: 'Donations',   showInMenu: true, showInHome: true, sortOrder: 5 },
   { sectionKey: 'Water',       showInMenu: true, showInHome: true, sortOrder: 6 },
   { sectionKey: 'Habits',      showInMenu: true, showInHome: true, sortOrder: 7 },

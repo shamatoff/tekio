@@ -58,7 +58,7 @@ function CardHeader({ title, onOpen, right }: { title: ReactNode; onOpen: () => 
 const WATER_PILLS = [100, 200, 300, 400, 500]
 
 export function OverviewTab({ setTab }: OverviewTabProps) {
-  const { weights, bodyweight, cardio, mobility, skills, donations, water, addWaterEntry, setToast,
+  const { weights, bodyweight, cardio, mobility, sports, donations, water, addWaterEntry, setToast,
     habits, habitCompletions, exerciseMuscles, muscleGroups, exerciseNames } = useAppStore()
   const { sections, weekStartDay } = usePrefs()
 
@@ -112,8 +112,8 @@ export function OverviewTab({ setTab }: OverviewTabProps) {
   const bwDiff = latestBw && prevBw ? +(latestBw.weight - prevBw.weight).toFixed(1) : null
   const latestBwDisplay = useCountUp(latestBw?.weight ?? 0)
 
-  const skillWeekMap: Record<string, number> = {}
-  skills.forEach(s => { if (weekKey(s.date, weekStartDay) === thisWeek) skillWeekMap[s.skill] = (skillWeekMap[s.skill] || 0) + 1 })
+  const sportWeekMap: Record<string, number> = {}
+  sports.forEach(s => { if (weekKey(s.date, weekStartDay) === thisWeek) sportWeekMap[s.sport] = (sportWeekMap[s.sport] || 0) + 1 })
 
   // Streak
   const activeDates = new Set<string>([
@@ -228,17 +228,17 @@ export function OverviewTab({ setTab }: OverviewTabProps) {
           ),
         },
         {
-          key: 'Skills',
-          order: sectionOrder['Skills'] ?? 4,
-          show: homeOn('Skills') && Object.entries(skillWeekMap).length > 0,
+          key: 'Sports',
+          order: sectionOrder['Sports'] ?? 4,
+          show: homeOn('Sports') && Object.entries(sportWeekMap).length > 0,
           node: (
             <Card>
-              <CardHeader title="🎯 Skills This Week" onOpen={() => setTab('Skills')} />
+              <CardHeader title="⚽ Sports This Week" onOpen={() => setTab('Sports')} />
               <div className="flex flex-wrap gap-2">
-                {Object.entries(skillWeekMap).map(([sk, count]) => (
+                {Object.entries(sportWeekMap).map(([sk, count]) => (
                   <button
                     key={sk}
-                    onClick={() => setTab('Skills')}
+                    onClick={() => setTab('Sports')}
                     className="px-3 py-1.5 rounded-full bg-accent-l text-accent text-sm font-semibold active:scale-[0.95] transition-transform"
                   >
                     {sk} <span className="opacity-70">{count}×</span>

@@ -1,5 +1,5 @@
 import type {
-  Adaptation, WeightEntry, CardioEntry, SkillEntry, ExerciseMuscleLink, MuscleGroup,
+  Adaptation, WeightEntry, CardioEntry, SportEntry, ExerciseMuscleLink, MuscleGroup,
   Habit, HabitCompletion,
 } from '../types'
 import { ADAPTATIONS, ADAPTATION_MAP, defaultAdaptationForExercise } from '../constants/adaptations'
@@ -29,13 +29,18 @@ export function classifyWeightSet(reps: number, override?: Adaptation | null): A
 }
 
 /**
- * Classify a cardio session. Without HR/intensity we use duration as a proxy:
- * long steady state = endurance; medium = VO₂max intervals; short = anaerobic.
+ * Classify a session by duration. Without HR/intensity we use duration as a
+ * proxy: long steady state = endurance; medium = VO₂max intervals; short =
+ * anaerobic. Shared by cardio and sport sessions.
  */
-export function classifyCardio(entry: CardioEntry): Adaptation {
-  if (entry.duration >= 25) return 'endurance'
-  if (entry.duration >= 8) return 'vo2max'
+export function classifyCardioByDuration(minutes: number): Adaptation {
+  if (minutes >= 25) return 'endurance'
+  if (minutes >= 8) return 'vo2max'
   return 'anaerobic_capacity'
+}
+
+export function classifyCardio(entry: CardioEntry): Adaptation {
+  return classifyCardioByDuration(entry.duration)
 }
 
 // ── Coverage ────────────────────────────────────────────────────────────────────
@@ -93,7 +98,7 @@ export function adaptationCoverage(
   args: {
     weights: WeightEntry[]
     cardio: CardioEntry[]
-    skills: SkillEntry[]
+    sports: SportEntry[]
     exerciseMuscles: ExerciseMuscleLink[]
     muscleGroups: MuscleGroup[]
     weekStart: string
@@ -117,7 +122,7 @@ export function adaptationCoverage(
     exerciseNames?: Record<string, string>
   },
 ): Record<Adaptation, AdaptationSummary> {
-  const { weights, cardio, skills, exerciseMuscles, muscleGroups, weekStart, overrides, targets } = args
+  const { weights, cardio, sports, exerciseMuscles, muscleGroups, weekStart, overrides, targets } = args
   const date = args.date ?? today()
   const trackedSet = args.trackedMuscleIds && args.trackedMuscleIds.length > 0
     ? new Set(args.trackedMuscleIds)
@@ -163,10 +168,13 @@ export function adaptationCoverage(
     volume[classifyCardio(c)] += 1
   }
 
-  // Skill sessions.
-  for (const s of skills) {
+  // Sport sessions count as cardio work, classified by duration like a cardio
+  // session. Sessions without a logged duration default to VO₂max — the typical
+  // intermittent-sport stimulus. They no longer feed the `skill` adaptation.
+  for (const s of sports) {
     if (!inRange(s.date, weekStart, date)) continue
-    volume.skill += 1
+    const a = s.duration ? classifyCardioByDuration(s.duration) : 'vo2max'
+    volume[a] += 1
   }
 
   // Manual habit completions that produce a stimulus. Recovery contributions

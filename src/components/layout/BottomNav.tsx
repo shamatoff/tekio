@@ -9,7 +9,7 @@ export function BottomNav({ tab, setTab, onMore, hidden }: BottomNavProps) {
   if (hidden) return null
   const tabs = [
     { key: 'Home', icon: '🏠', label: 'Home' },
-    { key: 'Adaptations', icon: '🎯', label: 'Adapt' },
+    { key: 'Adaptations', icon: '🧬', label: 'Adapt' },
     { key: 'Program', icon: '📋', label: 'Program' },
   ]
   return (

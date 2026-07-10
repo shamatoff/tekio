@@ -103,7 +103,8 @@ describe('adaptationCoverage', () => {
         w('c', '2025-01-03', 'Box Jump', 5, 5),     // power ×5 (keyword), Front Delt → 5
       ],
       cardio: [{ id: 'r', date: '2025-01-04', type: 'Running', duration: 45 }],
-      skills: [{ id: 's', date: '2025-01-04', skill: 'Tennis', withTrainer: false, quality: 3, notes: '' }],
+      // 20-min Tennis session → classified as cardio by duration (VO₂max), not skill.
+      sports: [{ id: 's', date: '2025-01-04', sport: 'Tennis', withTrainer: false, quality: 3, notes: '', duration: 20 }],
       exerciseMuscles: links,
       muscleGroups: groups,
       weekStart: '2025-01-01',
@@ -113,8 +114,9 @@ describe('adaptationCoverage', () => {
     expect(cov.strength.volume).toBe(3)
     expect(cov.hypertrophy.volume).toBe(4)
     expect(cov.power.volume).toBe(5)
-    expect(cov.endurance.volume).toBe(1)
-    expect(cov.skill.volume).toBe(1)
+    expect(cov.endurance.volume).toBe(1)      // Running 45 min
+    expect(cov.vo2max.volume).toBe(1)         // Tennis 20 min → cardio, not skill
+    expect(cov.skill.volume).toBe(0)          // sports no longer feed the skill adaptation
 
     const chestStrength = cov.strength.muscles.find(m => m.id === 'chest')!
     expect(chestStrength.aggSets).toBe(3)
@@ -129,7 +131,7 @@ describe('adaptationCoverage', () => {
     const cov = adaptationCoverage({
       weights: [w('a', '2024-12-30', 'Bench Press', 4, 3)],
       cardio: [],
-      skills: [],
+      sports: [],
       exerciseMuscles: links,
       muscleGroups: groups,
       weekStart: '2025-01-01',
@@ -149,7 +151,7 @@ describe('adaptationCoverage', () => {
       { id: 'c2', habitId: 'hb', periodStart: '2024-12-30', count: 5 }, // outside window → excluded
     ]
     const cov = adaptationCoverage({
-      weights: [], cardio: [], skills: [],
+      weights: [], cardio: [], sports: [],
       exerciseMuscles: links, muscleGroups: groups,
       weekStart: '2025-01-01', date: '2025-01-07',
       habits: [boxJumpHabit], habitCompletions: comps, exerciseNames: { bj: 'Box Jump' },
@@ -167,7 +169,7 @@ describe('adaptationCoverage', () => {
       countLevel: 1, contribution: 'recovery', singleTick: true, active: true, sortOrder: 0, exerciseId: 'bj',
     }
     const cov = adaptationCoverage({
-      weights: [], cardio: [], skills: [],
+      weights: [], cardio: [], sports: [],
       exerciseMuscles: links, muscleGroups: groups,
       weekStart: '2025-01-01', date: '2025-01-07',
       habits: [holdHabit],

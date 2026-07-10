@@ -5,7 +5,7 @@ const NAV_META: Record<string, { icon: string; label: string }> = {
   'Body Weight': { icon: '⚖️', label: 'Body Weight' },
   Cardio:       { icon: '❤️', label: 'Cardio' },
   Mobility:     { icon: '🧘', label: 'Mobility' },
-  Skills:       { icon: '🎯', label: 'Skills' },
+  Sports:       { icon: '⚽', label: 'Sports' },
   Donations:    { icon: '🩸', label: 'Donations' },
   Water:        { icon: '💧', label: 'Water' },
   Habits:       { icon: '✅', label: 'Habits' },
@@ -67,7 +67,7 @@ export function Drawer({ open, onClose, tab, setTab }: DrawerProps) {
         {/* Nav */}
         <div className="flex-1 overflow-y-auto py-2">
           <NavItem icon="🏠" label="Home" active={tab === 'Home'} onClick={() => { setTab('Home'); onClose() }} />
-          <NavItem icon="🎯" label="Adaptations" active={tab === 'Adaptations'} onClick={() => { setTab('Adaptations'); onClose() }} />
+          <NavItem icon="🧬" label="Adaptations" active={tab === 'Adaptations'} onClick={() => { setTab('Adaptations'); onClose() }} />
           <NavItem icon="📋" label="Program" active={tab === 'Program'} onClick={() => { setTab('Program'); onClose() }} />
           <div className="px-4 pt-3 pb-1">
             <p className="text-[10px] font-bold text-muted uppercase tracking-widest">Log</p>

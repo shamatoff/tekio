@@ -5,10 +5,10 @@ import { saveWeightEntry } from '../../lib/db/weights'
 import { saveBodyweightEntry } from '../../lib/db/bodyweight'
 import { saveCardioEntry } from '../../lib/db/cardio'
 import { saveMobilityEntry } from '../../lib/db/mobility'
-import { saveSkillEntry } from '../../lib/db/skills'
+import { saveSportEntry } from '../../lib/db/sport'
 import { saveDonationEntry } from '../../lib/db/donations'
 import { saveWaterEntry } from '../../lib/db/water'
-import type { WeightEntry, BodyweightEntry, CardioEntry, MobilityEntry, SkillEntry, DonationEntry, WaterEntry, Program } from '../../types'
+import type { WeightEntry, BodyweightEntry, CardioEntry, MobilityEntry, SportEntry, DonationEntry, WaterEntry, Program } from '../../types'
 import { Btn } from '../ui/Button'
 
 interface ImportPaneProps {
@@ -50,7 +50,7 @@ export function ImportPane({ onClose }: ImportPaneProps) {
       const existingBDates = new Set(store.bodyweight.map(b => b.date))
       const existingCKeys = new Set(store.cardio.map(c => `${c.date}:${c.type}`))
       const existingMDates = new Set(store.mobility.map(m => m.date))
-      const existingSkKeys = new Set(store.skills.map(s => `${s.date}:${s.skill}`))
+      const existingSkKeys = new Set(store.sports.map(s => `${s.date}:${s.sport}`))
       const existingDKeys = new Set(store.donations.map(d => `${d.date}:${d.type}`))
       const existingWaterKeys = new Set(store.water.map(w => `${w.date}:${w.amountMl}`))
 
@@ -58,7 +58,10 @@ export function ImportPane({ onClose }: ImportPaneProps) {
       const newInBodyweight = ((p.bodyweight as BodyweightEntry[]) || []).filter(b => !existingBDates.has(b.date))
       const newInCardio = ((p.cardio as CardioEntry[]) || []).filter(c => !existingCKeys.has(`${c.date}:${c.type}`))
       const newInMobility = ((p.mobility as MobilityEntry[]) || []).filter(m => !existingMDates.has(m.date))
-      const newInSkills = ((p.skills as SkillEntry[]) || []).filter(s => !existingSkKeys.has(`${s.date}:${s.skill}`))
+      // Accept both the new `sports` key and legacy `skills` exports (field `skill` → `sport`).
+      const inSports = ((p.sports ?? p.skills) as (SportEntry & { skill?: string })[] | undefined ?? [])
+        .map(s => ({ ...s, sport: (s.sport ?? s.skill) as SportEntry['sport'] }))
+      const newInSports = inSports.filter(s => !existingSkKeys.has(`${s.date}:${s.sport}`))
       const newInDonations = ((p.donations as DonationEntry[]) || []).filter(d => !existingDKeys.has(`${d.date}:${d.type}`))
       const newInWater = ((p.water as WaterEntry[]) || []).filter(w => !existingWaterKeys.has(`${w.date}:${w.amountMl}`))
 
@@ -66,7 +69,7 @@ export function ImportPane({ onClose }: ImportPaneProps) {
       const newBodyweight: BodyweightEntry[] = mergeById(store.bodyweight, newInBodyweight)
       const newCardio: CardioEntry[] = mergeById(store.cardio, newInCardio)
       const newMobility: MobilityEntry[] = mergeById(store.mobility, newInMobility)
-      const newSkills: SkillEntry[] = mergeById(store.skills, newInSkills)
+      const newSports: SportEntry[] = mergeById(store.sports, newInSports)
       const newDonations: DonationEntry[] = mergeById(store.donations, newInDonations)
       const newWater: WaterEntry[] = mergeById(store.water, newInWater)
 
@@ -86,7 +89,7 @@ export function ImportPane({ onClose }: ImportPaneProps) {
         ...newInBodyweight.map(b => saveBodyweightEntry(b)),
         ...newInCardio.map(c => saveCardioEntry(c)),
         ...newInMobility.map(m => saveMobilityEntry(m)),
-        ...newInSkills.map(s => saveSkillEntry(s)),
+        ...newInSports.map(s => saveSportEntry(s)),
         ...newInDonations.map(d => saveDonationEntry(d)),
         ...newInWater.map(w => saveWaterEntry(w)),
       ])
@@ -95,7 +98,7 @@ export function ImportPane({ onClose }: ImportPaneProps) {
       store.setBodyweight(newBodyweight)
       store.setCardio(newCardio)
       store.setMobility(newMobility)
-      store.setSkills(newSkills)
+      store.setSports(newSports)
       store.setDonations(newDonations)
       store.setWater(newWater)
 

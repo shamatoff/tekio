@@ -22,7 +22,7 @@ export function ExportPane({ onClose }: ExportPaneProps) {
       bodyweight: f(store.bodyweight),
       cardio: f(store.cardio),
       mobility: f(store.mobility),
-      skills: f(store.skills),
+      sports: f(store.sports),
       donations: f(store.donations),
       water: f(store.water),
       programs: store.programs,

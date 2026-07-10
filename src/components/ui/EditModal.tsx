@@ -15,14 +15,14 @@ import type {
   BodyweightEntry,
   CardioEntry,
   MobilityEntry,
-  SkillEntry,
+  SportEntry,
   DonationEntry,
   WaterEntry,
   LiftSet,
   MobilityExercise,
   QualityRating,
   MatchResult,
-  NewSkillFlags,
+  NewSportFlags,
 } from '../../types'
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
@@ -351,56 +351,60 @@ function MobilityForm({ record, onClose, saveRef }: { record: MobilityEntry; onC
   )
 }
 
-// ── SkillForm ─────────────────────────────────────────────────────────────────
+// ── SportForm ─────────────────────────────────────────────────────────────────
 
 const STARS = [1, 2, 3, 4, 5]
 
-function SkillForm({ record, onClose, saveRef }: { record: SkillEntry; onClose: () => void; saveRef: { current: () => void } }) {
-  const editSkillEntry = useAppStore(s => s.editSkillEntry)
+function SportForm({ record, onClose, saveRef }: { record: SportEntry; onClose: () => void; saveRef: { current: () => void } }) {
+  const editSportEntry = useAppStore(s => s.editSportEntry)
   const setToast = useAppStore(s => s.setToast)
-  const skills = useAppStore(s => s.skills)
-  const skillTypes = useAppStore(s => s.skillTypes)
-  const allSkills = useMemo(() => [...new Set(skills.map(d => d.skill))].sort(), [skills])
+  const sports = useAppStore(s => s.sports)
+  const sportTypes = useAppStore(s => s.sportTypes)
+  const allSports = useMemo(() => [...new Set(sports.map(d => d.sport))].sort(), [sports])
   const allCompetitors = useMemo(
-    () => [...new Set(skills.flatMap(d => d.competitorNames ?? []))].sort(),
-    [skills]
+    () => [...new Set(sports.flatMap(d => d.competitorNames ?? []))].sort(),
+    [sports]
   )
   const allTeammates = useMemo(
-    () => [...new Set(skills.flatMap(d => d.teammateNames ?? []))].sort(),
-    [skills]
+    () => [...new Set(sports.flatMap(d => d.teammateNames ?? []))].sort(),
+    [sports]
   )
   const [date, setDate] = useState(record.date)
-  const [skill, setSkill] = useState<string>(record.skill)
+  const [sport, setSport] = useState<string>(record.sport)
   const [withTrainer, setWithTrainer] = useState(record.withTrainer)
   const [quality, setQuality] = useState<number>(record.quality)
+  const [duration, setDuration] = useState(record.duration != null ? formatDurationMins(record.duration) : '')
+  const [avgHr, setAvgHr] = useState(record.avgHr != null ? String(record.avgHr) : '')
   const [notes, setNotes] = useState(record.notes)
   const [competitorNames, setCompetitorNames] = useState<string[]>(record.competitorNames ?? [])
   const [result, setResult] = useState<MatchResult | ''>(record.result ?? '')
   const [teammates, setTeammates] = useState<string[]>(record.teammateNames ?? [])
-  const [newSkillHasCompetitor, setNewSkillHasCompetitor] = useState(false)
-  const [newSkillHasTeammate, setNewSkillHasTeammate] = useState(false)
+  const [newSportHasCompetitor, setNewSportHasCompetitor] = useState(false)
+  const [newSportHasTeammate, setNewSportHasTeammate] = useState(false)
 
-  const existingType = skillTypes.find(t => t.name.toLowerCase() === skill.trim().toLowerCase())
-  const isNewSkill = skill.trim() !== '' && !existingType
-  const hasCompetitor = existingType ? existingType.hasCompetitor : (isNewSkill && newSkillHasCompetitor)
-  const hasTeammate = existingType ? existingType.hasTeammate : (isNewSkill && newSkillHasTeammate)
+  const existingType = sportTypes.find(t => t.name.toLowerCase() === sport.trim().toLowerCase())
+  const isNewSport = sport.trim() !== '' && !existingType
+  const hasCompetitor = existingType ? existingType.hasCompetitor : (isNewSport && newSportHasCompetitor)
+  const hasTeammate = existingType ? existingType.hasTeammate : (isNewSport && newSportHasTeammate)
 
   const save = async () => {
-    if (!skill.trim()) return
-    const newSkillFlags: NewSkillFlags | undefined = isNewSkill
-      ? { hasCompetitor: newSkillHasCompetitor, hasTeammate: newSkillHasTeammate }
+    if (!sport.trim()) return
+    const newSportFlags: NewSportFlags | undefined = isNewSport
+      ? { hasCompetitor: newSportHasCompetitor, hasTeammate: newSportHasTeammate }
       : undefined
     try {
-      await editSkillEntry(record.id, {
+      await editSportEntry(record.id, {
         date,
-        skill: skill as SkillEntry['skill'],
+        sport: sport as SportEntry['sport'],
         withTrainer,
         quality: quality as QualityRating,
+        duration: parseDurationMins(duration) || undefined,
+        avgHr: avgHr ? +avgHr : undefined,
         notes,
         competitorNames: hasCompetitor ? (competitorNames.length ? competitorNames : undefined) : undefined,
         result: hasCompetitor ? (result || undefined) : undefined,
         teammateNames: hasTeammate ? teammates : undefined,
-      }, newSkillFlags)
+      }, newSportFlags)
       setToast('✅ Updated!')
       onClose()
     } catch {
@@ -412,24 +416,24 @@ function SkillForm({ record, onClose, saveRef }: { record: SkillEntry; onClose: 
   return (
     <div className="flex flex-col gap-3">
       <div>
-        <p className="text-xs text-muted font-medium mb-1">Skill</p>
+        <p className="text-xs text-muted font-medium mb-1">Sport</p>
         <SmartInput
-          value={skill}
-          onChange={setSkill}
-          suggestions={allSkills}
+          value={sport}
+          onChange={setSport}
+          suggestions={allSports}
           placeholder="e.g. Tennis"
         />
       </div>
 
-      {isNewSkill && (
+      {isNewSport && (
         <div className="flex flex-col gap-1.5 px-3 py-2 rounded-lg bg-bg border border-border">
-          <p className="text-xs text-muted font-medium">New skill — what should this track?</p>
+          <p className="text-xs text-muted font-medium">New sport — what should this track?</p>
           <label className="flex items-center gap-2 text-xs text-primary">
-            <input type="checkbox" checked={newSkillHasCompetitor} onChange={e => setNewSkillHasCompetitor(e.target.checked)} />
+            <input type="checkbox" checked={newSportHasCompetitor} onChange={e => setNewSportHasCompetitor(e.target.checked)} />
             Competitor (opponent + win/loss)
           </label>
           <label className="flex items-center gap-2 text-xs text-primary">
-            <input type="checkbox" checked={newSkillHasTeammate} onChange={e => setNewSkillHasTeammate(e.target.checked)} />
+            <input type="checkbox" checked={newSportHasTeammate} onChange={e => setNewSportHasTeammate(e.target.checked)} />
             Teammate(s)
           </label>
         </div>
@@ -455,6 +459,25 @@ function SkillForm({ record, onClose, saveRef }: { record: SkillEntry; onClose: 
             ))}
           </div>
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2.5">
+        <Inp
+          label="Duration (MM:SS, opt.)"
+          type="text"
+          value={duration}
+          onChange={e => setDuration(e.target.value)}
+          placeholder="60:00"
+        />
+        <Inp
+          label="Avg HR (bpm, opt.)"
+          type="number"
+          value={avgHr}
+          onChange={e => setAvgHr(e.target.value)}
+          placeholder="130"
+          min="0"
+          step="1"
+        />
       </div>
 
       <div>
@@ -609,7 +632,7 @@ const TITLES: Record<string, string> = {
   bodyweight: 'Edit Body Weight',
   cardio: 'Edit Cardio Session',
   mobility: 'Edit Mobility Session',
-  skill: 'Edit Skill Session',
+  sport: 'Edit Sport Session',
   donation: 'Edit Donation',
   water: 'Edit Water Entry',
   habit: 'Edit Habit',
@@ -647,8 +670,8 @@ export function EditModal() {
       {editModal?.type === 'mobility' && (
         <MobilityForm record={editModal.record} onClose={closeEditModal} saveRef={saveRef} />
       )}
-      {editModal?.type === 'skill' && (
-        <SkillForm record={editModal.record} onClose={closeEditModal} saveRef={saveRef} />
+      {editModal?.type === 'sport' && (
+        <SportForm record={editModal.record} onClose={closeEditModal} saveRef={saveRef} />
       )}
       {editModal?.type === 'donation' && (
         <DonationForm record={editModal.record} onClose={closeEditModal} saveRef={saveRef} />

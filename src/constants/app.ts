@@ -46,4 +46,4 @@ export const DONATION_ELIGIBILITY_DAYS: Record<string, number> = {
   Plasma: 14,
 }
 
-export const SKILL_TYPES_DEFAULT = ['Tennis', 'Swimming', 'Volleyball']
+export const SPORT_TYPES_DEFAULT = ['Tennis', 'Swimming', 'Volleyball']

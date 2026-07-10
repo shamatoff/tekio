@@ -9,7 +9,7 @@ export const BLOCK_META: Record<BlockType, { icon: string; label: string }> = {
   weight: { icon: '🏋️', label: 'Weights' },
   mobility: { icon: '🧘', label: 'Mobility' },
   conditioning: { icon: '🫀', label: 'Conditioning' },
-  sport: { icon: '🎯', label: 'Sport' },
+  sport: { icon: '⚽', label: 'Sport' },
   recovery: { icon: '🛌', label: 'Recovery' },
 }
 

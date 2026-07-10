@@ -6,8 +6,8 @@ import type {
   BodyweightEntry,
   CardioEntry,
   MobilityEntry,
-  SkillEntry,
-  NewSkillFlags,
+  SportEntry,
+  NewSportFlags,
   DonationEntry,
   WaterEntry,
   Program,
@@ -41,7 +41,7 @@ import { startOfWeek, today } from '../lib/utils'
 import { loadBodyweight, saveBodyweightEntry, deleteBodyweightEntry, updateBodyweightEntry } from '../lib/db/bodyweight'
 import { loadCardio, saveCardioEntry, deleteCardioEntry, updateCardioEntry } from '../lib/db/cardio'
 import { loadMobility, saveMobilityEntry, deleteMobilityEntry, updateMobilityEntry } from '../lib/db/mobility'
-import { loadSkills, loadSkillTypes, saveSkillEntry, deleteSkillEntry, updateSkillEntry } from '../lib/db/skills'
+import { loadSports, loadSportTypes, saveSportEntry, deleteSportEntry, updateSportEntry } from '../lib/db/sport'
 import { loadDonations, saveDonationEntry, deleteDonationEntry, updateDonationEntry } from '../lib/db/donations'
 import { loadWater, saveWaterEntry, deleteWaterEntry, updateWaterEntry } from '../lib/db/water'
 import { usePrefs } from './prefs'
@@ -60,8 +60,8 @@ interface AppStore extends AppState {
   setBodyweight: (bodyweight: AppState['bodyweight']) => void
   setCardio: (cardio: AppState['cardio']) => void
   setMobility: (mobility: AppState['mobility']) => void
-  setSkills: (skills: AppState['skills']) => void
-  setSkillTypes: (skillTypes: AppState['skillTypes']) => void
+  setSports: (sports: AppState['sports']) => void
+  setSportTypes: (sportTypes: AppState['sportTypes']) => void
   setDonations: (donations: AppState['donations']) => void
   setWater: (water: AppState['water']) => void
   setToast: (msg: string) => void
@@ -97,10 +97,10 @@ interface AppStore extends AppState {
   removeMobilityEntry: (id: string) => Promise<void>
   editMobilityEntry: (id: string, patch: Omit<MobilityEntry, 'id'>) => Promise<void>
 
-  // Skills
-  addSkillEntry: (entry: Omit<SkillEntry, 'id'>, newSkillFlags?: NewSkillFlags) => Promise<void>
-  removeSkillEntry: (id: string) => Promise<void>
-  editSkillEntry: (id: string, patch: Omit<SkillEntry, 'id'>, newSkillFlags?: NewSkillFlags) => Promise<void>
+  // Sports
+  addSportEntry: (entry: Omit<SportEntry, 'id'>, newSportFlags?: NewSportFlags) => Promise<void>
+  removeSportEntry: (id: string) => Promise<void>
+  editSportEntry: (id: string, patch: Omit<SportEntry, 'id'>, newSportFlags?: NewSportFlags) => Promise<void>
 
   // Donations
   addDonationEntry: (entry: Omit<DonationEntry, 'id'>) => Promise<void>
@@ -161,8 +161,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
   bodyweight: [],
   cardio: [],
   mobility: [],
-  skills: [],
-  skillTypes: [],
+  sports: [],
+  sportTypes: [],
   donations: [],
   water: [],
   programs: [],
@@ -188,8 +188,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
   setBodyweight: (bodyweight) => set({ bodyweight }),
   setCardio: (cardio) => set({ cardio }),
   setMobility: (mobility) => set({ mobility }),
-  setSkills: (skills) => set({ skills }),
-  setSkillTypes: (skillTypes) => set({ skillTypes }),
+  setSports: (sports) => set({ sports }),
+  setSportTypes: (sportTypes) => set({ sportTypes }),
   setDonations: (donations) => set({ donations }),
   setWater: (water) => set({ water }),
   setToast: (toast) => {
@@ -202,7 +202,7 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({ loading: true })
     try {
       await getOrCreateUser()
-      const [weights, activePrograms, programHistory, weekOverrides, bodyweight, cardio, mobility, muscleGroups, exerciseMuscles, exercises, habits, habitCompletions, skills, skillTypes, donations, water, adaptationTargets] = await Promise.all([
+      const [weights, activePrograms, programHistory, weekOverrides, bodyweight, cardio, mobility, muscleGroups, exerciseMuscles, exercises, habits, habitCompletions, sports, sportTypes, donations, water, adaptationTargets] = await Promise.all([
         loadWeights(),
         loadActivePrograms(),
         loadProgramCycles(),
@@ -215,8 +215,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
         loadExercises(),
         loadHabits(),
         loadHabitCompletions(),
-        loadSkills(),
-        loadSkillTypes(),
+        loadSports(),
+        loadSportTypes(),
         loadDonations(),
         loadWater(),
         loadAdaptationTargets(),
@@ -233,8 +233,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
         exerciseAdaptations: adaptationMap(exercises),
         habits,
         habitCompletions,
-        skills,
-        skillTypes,
+        sports,
+        sportTypes,
         donations,
         water,
         programs: activePrograms,
@@ -386,27 +386,27 @@ export const useAppStore = create<AppStore>((set, get) => ({
     }))
   },
 
-  // ── Skills ───────────────────────────────────────────────────────────────────
-  addSkillEntry: async (entry, newSkillFlags) => {
-    const saved = await saveSkillEntry(entry, newSkillFlags)
+  // ── Sports ───────────────────────────────────────────────────────────────────
+  addSportEntry: async (entry, newSportFlags) => {
+    const saved = await saveSportEntry(entry, newSportFlags)
     set(s => ({
-      skills: [saved, ...s.skills],
-      skillTypes: newSkillFlags
-        ? [...s.skillTypes.filter(t => t.name.toLowerCase() !== saved.skill.toLowerCase()), { name: saved.skill, ...newSkillFlags }]
-        : s.skillTypes,
+      sports: [saved, ...s.sports],
+      sportTypes: newSportFlags
+        ? [...s.sportTypes.filter(t => t.name.toLowerCase() !== saved.sport.toLowerCase()), { name: saved.sport, ...newSportFlags }]
+        : s.sportTypes,
     }))
   },
-  removeSkillEntry: async (id) => {
-    await deleteSkillEntry(id)
-    set(s => ({ skills: s.skills.filter(sk => sk.id !== id) }))
+  removeSportEntry: async (id) => {
+    await deleteSportEntry(id)
+    set(s => ({ sports: s.sports.filter(sk => sk.id !== id) }))
   },
-  editSkillEntry: async (id, patch, newSkillFlags) => {
-    await updateSkillEntry(id, patch, newSkillFlags)
+  editSportEntry: async (id, patch, newSportFlags) => {
+    await updateSportEntry(id, patch, newSportFlags)
     set(s => ({
-      skills: s.skills.map(sk => (sk.id === id ? { ...sk, ...patch } : sk)),
-      skillTypes: newSkillFlags
-        ? [...s.skillTypes.filter(t => t.name.toLowerCase() !== patch.skill.toLowerCase()), { name: patch.skill, ...newSkillFlags }]
-        : s.skillTypes,
+      sports: s.sports.map(sk => (sk.id === id ? { ...sk, ...patch } : sk)),
+      sportTypes: newSportFlags
+        ? [...s.sportTypes.filter(t => t.name.toLowerCase() !== patch.sport.toLowerCase()), { name: patch.sport, ...newSportFlags }]
+        : s.sportTypes,
     }))
   },
 

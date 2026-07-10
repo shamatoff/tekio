@@ -14,7 +14,7 @@ interface Props<T> {
   getDate: (item: T) => string
   /** Optional list of category values shown in the dropdown filter. */
   categories?: string[]
-  /** Label for the category dropdown (e.g. 'Exercise', 'Type', 'Skill'). */
+  /** Label for the category dropdown (e.g. 'Exercise', 'Type', 'Sport'). */
   categoryLabel?: string
   /** Return true when the item matches the selected category string. */
   matchesCategory?: (item: T, cat: string) => boolean

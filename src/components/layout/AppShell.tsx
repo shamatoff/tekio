@@ -16,7 +16,7 @@ const TAB_TITLES: Record<string, string> = {
   'Body Weight': 'Body Weight',
   Cardio: 'Cardio',
   Mobility: 'Mobility',
-  Skills: 'Skills',
+  Sports: 'Sports',
   Donations: 'Blood Donations',
   Profile: 'Profile & Settings',
   Admin: 'Admin',

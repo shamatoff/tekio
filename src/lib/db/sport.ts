@@ -1,10 +1,10 @@
 import { supabase } from '../supabase'
 import { USER_ID } from '../../constants/app'
-import type { SkillEntry, SkillTypeInfo, NewSkillFlags, QualityRating, MatchResult } from '../../types'
+import type { SportEntry, SportTypeInfo, NewSportFlags, QualityRating, MatchResult } from '../../types'
 
-async function getOrCreateSkillType(name: string, newSkillFlags?: NewSkillFlags): Promise<string> {
+async function getOrCreateSportType(name: string, newSportFlags?: NewSportFlags): Promise<string> {
   const { data: existing, error: selectError } = await supabase
-    .from('skill_types')
+    .from('sport_types')
     .select('id')
     .eq('user_id', USER_ID)
     .eq('name', name)
@@ -13,13 +13,13 @@ async function getOrCreateSkillType(name: string, newSkillFlags?: NewSkillFlags)
   if (existing) return existing.id
 
   const { data, error } = await supabase
-    .from('skill_types')
+    .from('sport_types')
     .insert({
       user_id: USER_ID,
       name,
       is_system: false,
-      has_competitor: newSkillFlags?.hasCompetitor ?? false,
-      has_teammate: newSkillFlags?.hasTeammate ?? false,
+      has_competitor: newSportFlags?.hasCompetitor ?? false,
+      has_teammate: newSportFlags?.hasTeammate ?? false,
     })
     .select('id')
     .single()
@@ -27,28 +27,30 @@ async function getOrCreateSkillType(name: string, newSkillFlags?: NewSkillFlags)
   return data.id
 }
 
-export async function loadSkillTypes(): Promise<SkillTypeInfo[]> {
+export async function loadSportTypes(): Promise<SportTypeInfo[]> {
   const { data, error } = await supabase
-    .from('skill_types')
+    .from('sport_types')
     .select('name, has_competitor, has_teammate')
     .eq('user_id', USER_ID)
   if (error) throw error
   return (data ?? []).map(r => ({ name: r.name, hasCompetitor: r.has_competitor, hasTeammate: r.has_teammate }))
 }
 
-export async function loadSkills(): Promise<SkillEntry[]> {
+export async function loadSports(): Promise<SportEntry[]> {
   const { data, error } = await supabase
-    .from('skill_sessions')
-    .select('id, session_date, with_trainer, quality, notes, competitor_names, result, teammate_names, skill_types(name)')
+    .from('sport_sessions')
+    .select('id, session_date, with_trainer, quality, duration_minutes, avg_heart_rate, notes, competitor_names, result, teammate_names, sport_types(name)')
     .eq('user_id', USER_ID)
     .order('session_date', { ascending: false })
   if (error) throw error
   return (data ?? []).map(r => ({
     id: r.id,
     date: r.session_date,
-    skill: ((r.skill_types as unknown as { name: string } | null)?.name ?? '') as SkillEntry['skill'],
+    sport: ((r.sport_types as unknown as { name: string } | null)?.name ?? '') as SportEntry['sport'],
     withTrainer: r.with_trainer,
     quality: (r.quality ?? 0) as QualityRating,
+    duration: r.duration_minutes != null ? Number(r.duration_minutes) : undefined,
+    avgHr: r.avg_heart_rate != null ? Number(r.avg_heart_rate) : undefined,
     notes: r.notes ?? '',
     competitorNames: r.competitor_names ?? undefined,
     result: (r.result ?? undefined) as MatchResult | undefined,
@@ -56,33 +58,37 @@ export async function loadSkills(): Promise<SkillEntry[]> {
   }))
 }
 
-export async function saveSkillEntry(
-  entry: Omit<SkillEntry, 'id'>,
-  newSkillFlags?: NewSkillFlags
-): Promise<SkillEntry> {
-  const skillTypeId = await getOrCreateSkillType(entry.skill, newSkillFlags)
+export async function saveSportEntry(
+  entry: Omit<SportEntry, 'id'>,
+  newSportFlags?: NewSportFlags
+): Promise<SportEntry> {
+  const sportTypeId = await getOrCreateSportType(entry.sport, newSportFlags)
   const { data, error } = await supabase
-    .from('skill_sessions')
+    .from('sport_sessions')
     .insert({
       user_id: USER_ID,
-      skill_type_id: skillTypeId,
+      sport_type_id: sportTypeId,
       session_date: entry.date,
       with_trainer: entry.withTrainer,
       quality: entry.quality || null,
+      duration_minutes: entry.duration ?? null,
+      avg_heart_rate: entry.avgHr ?? null,
       notes: entry.notes || null,
       competitor_names: entry.competitorNames?.length ? entry.competitorNames : null,
       result: entry.result || null,
       teammate_names: entry.teammateNames?.length ? entry.teammateNames : null,
     })
-    .select('id, session_date, with_trainer, quality, notes, competitor_names, result, teammate_names')
+    .select('id, session_date, with_trainer, quality, duration_minutes, avg_heart_rate, notes, competitor_names, result, teammate_names')
     .single()
   if (error) throw error
   return {
     id: data.id,
     date: data.session_date,
-    skill: entry.skill,
+    sport: entry.sport,
     withTrainer: data.with_trainer,
     quality: (data.quality ?? 0) as QualityRating,
+    duration: data.duration_minutes != null ? Number(data.duration_minutes) : undefined,
+    avgHr: data.avg_heart_rate != null ? Number(data.avg_heart_rate) : undefined,
     notes: data.notes ?? '',
     competitorNames: data.competitor_names ?? undefined,
     result: (data.result ?? undefined) as MatchResult | undefined,
@@ -90,24 +96,26 @@ export async function saveSkillEntry(
   }
 }
 
-export async function deleteSkillEntry(id: string): Promise<void> {
-  const { error } = await supabase.from('skill_sessions').delete().eq('id', id)
+export async function deleteSportEntry(id: string): Promise<void> {
+  const { error } = await supabase.from('sport_sessions').delete().eq('id', id)
   if (error) throw error
 }
 
-export async function updateSkillEntry(
+export async function updateSportEntry(
   id: string,
-  patch: Omit<SkillEntry, 'id'>,
-  newSkillFlags?: NewSkillFlags
+  patch: Omit<SportEntry, 'id'>,
+  newSportFlags?: NewSportFlags
 ): Promise<void> {
-  const skillTypeId = await getOrCreateSkillType(patch.skill, newSkillFlags)
+  const sportTypeId = await getOrCreateSportType(patch.sport, newSportFlags)
   const { error } = await supabase
-    .from('skill_sessions')
+    .from('sport_sessions')
     .update({
-      skill_type_id: skillTypeId,
+      sport_type_id: sportTypeId,
       session_date: patch.date,
       with_trainer: patch.withTrainer,
       quality: patch.quality || null,
+      duration_minutes: patch.duration ?? null,
+      avg_heart_rate: patch.avgHr ?? null,
       notes: patch.notes || null,
       competitor_names: patch.competitorNames?.length ? patch.competitorNames : null,
       result: patch.result || null,

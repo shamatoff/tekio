@@ -10,10 +10,13 @@ function fmt(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(1)
 }
 
-function Row({ row, maxSets, child }: { row: MuscleStatusRow; maxSets: number; child?: boolean }) {
+function Row({ row, child }: { row: MuscleStatusRow; child?: boolean }) {
   const s = STATUS_STYLE[row.status]
   const value = child ? row.sets : row.aggSets
-  const pct = maxSets > 0 ? Math.round((value / maxSets) * 100) : 0
+  // Fill = progress toward the weekly target (capped at 100%), so a "needs work"
+  // muscle reads as a partial bar that matches its amber status and the body map —
+  // not relative-to-the-biggest-muscle, which made under-target muscles look full.
+  const pct = row.target > 0 ? Math.min(100, Math.round((value / row.target) * 100)) : 0
   return (
     <div className="flex items-center gap-2">
       <span className={`${child ? 'text-[11px] text-muted' : 'text-xs font-semibold text-primary'} w-28 text-left truncate`}>
@@ -35,16 +38,15 @@ export function MuscleStatusList({ muscles }: { muscles: MuscleStatusRow[] }) {
   if (muscles.length === 0) {
     return <p className="text-[11px] text-muted italic">No muscle-group data yet.</p>
   }
-  const maxSets = Math.max(1, ...muscles.map(m => m.aggSets))
   return (
     <div className="flex flex-col gap-1.5">
       {muscles.map(top => (
         <div key={top.id}>
-          <Row row={top} maxSets={maxSets} />
+          <Row row={top} />
           {top.children.length > 0 && (
             <div className="pl-4 flex flex-col gap-1 mt-1">
               {top.children.map(c => (
-                <Row key={c.id} row={c} maxSets={maxSets} child />
+                <Row key={c.id} row={c} child />
               ))}
             </div>
           )}
