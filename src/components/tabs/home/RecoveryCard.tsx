@@ -51,12 +51,22 @@ export function RecoveryCard({ setTab }: RecoveryCardProps) {
     const avgHours = nights ? sleepWk.reduce((s, e) => s + e.hours, 0) / nights : 0
     const rated = sleepWk.filter(e => e.quality != null)
     const avgQuality = rated.length ? rated.reduce((s, e) => s + (e.quality ?? 0), 0) / rated.length : 0
+    // Garmin Sleep Score (0–100) — objective, and richer than raw duration.
+    const scored = sleepWk.filter(e => e.score != null)
+    const avgScore = scored.length ? Math.round(scored.reduce((s, e) => s + (e.score ?? 0), 0) / scored.length) : 0
     const mobMinutes = mobWk.reduce((s, e) => s + e.duration, 0)
     const saunaMin = saunaWk.reduce((s, e) => s + e.duration, 0)
     const coldMin = coldWk.reduce((s, e) => s + e.duration, 0)
 
+    // Per-night sleep sub-score: prefer the Garmin score (it already folds in
+    // duration + stages + overnight HRV), else fall back to duration-vs-target.
+    const perNight = sleepWk.map(e =>
+      e.score != null ? clamp01(e.score / 100) : clamp01(e.hours / RECOVERY_TARGETS.sleepHours),
+    )
+    const sleepSub = perNight.length ? perNight.reduce((a, b) => a + b, 0) / perNight.length : 0
+
     const sub = {
-      sleep: clamp01(avgHours / RECOVERY_TARGETS.sleepHours),
+      sleep: sleepSub,
       mobility: clamp01(mobMinutes / RECOVERY_TARGETS.mobilityMinutes),
       sauna: clamp01(saunaWk.length / RECOVERY_TARGETS.saunaSessions),
       cold: clamp01(coldWk.length / RECOVERY_TARGETS.coldSessions),
@@ -68,7 +78,7 @@ export function RecoveryCard({ setTab }: RecoveryCardProps) {
     return {
       readiness, sub,
       sleepWk, saunaWk, coldWk,
-      nights, avgHours, avgQuality, mobMinutes,
+      nights, avgHours, avgQuality, avgScore, mobMinutes,
       saunaSessions: saunaWk.length, saunaMin,
       coldSessions: coldWk.length, coldMin,
     }
@@ -107,14 +117,19 @@ export function RecoveryCard({ setTab }: RecoveryCardProps) {
           icon={RECOVERY_ICONS.sleep}
           name="Sleep"
           sub={agg.sub.sleep}
-          stat={agg.nights ? `${fmt(agg.avgHours)}h avg${agg.avgQuality ? ` · ★${fmt(agg.avgQuality)}` : ''}` : '—'}
-          target={`target ${RECOVERY_TARGETS.sleepHours}h/night`}
+          stat={agg.nights
+            ? `${fmt(agg.avgHours)}h${agg.avgScore ? ` · ⌚${agg.avgScore}` : agg.avgQuality ? ` · ★${fmt(agg.avgQuality)}` : ''}`
+            : '—'}
+          target={agg.avgScore ? `Garmin avg score ${agg.avgScore}` : `target ${RECOVERY_TARGETS.sleepHours}h/night`}
           open={adding === 'sleep'}
           onToggle={() => setAdding(a => (a === 'sleep' ? null : 'sleep'))}
           chips={
             <Chips
               entries={agg.sleepWk}
-              label={e => `${fmt((e as SleepEntry).hours)}h`}
+              label={e => {
+                const s = e as SleepEntry
+                return s.score != null ? `${fmt(s.hours)}h·${s.score}` : `${fmt(s.hours)}h`
+              }}
               onEdit={e => edit({ type: 'sleep', record: e as SleepEntry })}
             />
           }

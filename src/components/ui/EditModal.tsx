@@ -684,6 +684,13 @@ function SleepForm({ record, onClose, saveRef }: { record: SleepEntry; onClose: 
         <Inp label="Date" type="date" value={date} onChange={e => setDate(e.target.value)} />
         <Inp label="Hours" type="number" value={hours} onChange={e => setHours(e.target.value)} step="0.25" min="0" placeholder="7.5" />
       </div>
+      {record.score != null && (
+        <div className="flex items-center gap-2 text-xs px-2.5 py-1.5 rounded-lg bg-bg text-muted">
+          <span>⌚ Garmin Sleep Score</span>
+          <span className="font-bold text-primary tabular-nums">{record.score}</span>
+          {record.scoreQualifier && <span className="uppercase tracking-wide text-[10px]">{record.scoreQualifier.toLowerCase()}</span>}
+        </div>
+      )}
       <div>
         <p className="text-xs text-muted font-medium mb-1">Quality (opt.)</p>
         <div className="flex gap-1 items-center">
