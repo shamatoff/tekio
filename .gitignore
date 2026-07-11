@@ -27,3 +27,10 @@ npm-debug.log*
 
 # Playwright ad-hoc tests (gitignored, used with MCP)
 playwright-tests/
+
+# Python (garmin-sync scripts run in CI; these are local-only artifacts)
+__pycache__/
+*.pyc
+# Never commit Garmin tokens — they belong only in GitHub Actions secrets
+.garminconnect/
+garmin_tokens.json
