@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import os
 import sys
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 import requests
 from garminconnect import Garmin
@@ -53,10 +53,15 @@ def login() -> Garmin:
 
 def _time_of_day(epoch_ms_local: int | None) -> str | None:
     """Garmin *Local timestamps are epoch-ms that already read as wall-clock time
-    when interpreted as UTC — so utcfromtimestamp yields the local HH:MM:SS."""
+    when interpreted as UTC — so reading them as UTC yields the local HH:MM:SS."""
     if not epoch_ms_local:
         return None
-    return datetime.utcfromtimestamp(epoch_ms_local / 1000).strftime("%H:%M:%S")
+    return datetime.fromtimestamp(epoch_ms_local / 1000, tz=timezone.utc).strftime("%H:%M:%S")
+
+
+def _as_int(v) -> int | None:
+    """Garmin sometimes returns HR/HRV/score as floats (e.g. 81.0); the DB columns are int."""
+    return int(round(v)) if v is not None else None
 
 
 def extract_row(user_id: str, raw: dict) -> dict | None:
@@ -74,13 +79,13 @@ def extract_row(user_id: str, raw: dict) -> dict | None:
         "user_id": user_id,
         "log_date": log_date,
         "duration_hours": round(seconds / 3600, 2),
-        "sleep_score": overall.get("value"),
+        "sleep_score": _as_int(overall.get("value")),
         "sleep_score_qualifier": overall.get("qualifierKey"),
         "source": "garmin",
         "bedtime": _time_of_day(dto.get("sleepStartTimestampLocal")),
         "wake_time": _time_of_day(dto.get("sleepEndTimestampLocal")),
-        "hrv": raw.get("avgOvernightHrv") or dto.get("avgOvernightHrv"),
-        "resting_hr": raw.get("restingHeartRate") or dto.get("restingHeartRate"),
+        "hrv": _as_int(raw.get("avgOvernightHrv") or dto.get("avgOvernightHrv")),
+        "resting_hr": _as_int(raw.get("restingHeartRate") or dto.get("restingHeartRate")),
     }
     # Drop keys the API didn't provide so we never null-out an existing column.
     return {k: v for k, v in row.items() if v is not None}
