@@ -22,13 +22,30 @@ changes their internal API (bump the library version if so).
 
 ### 1. Generate the token blob (local machine)
 
-```bash
-cd scripts/garmin-sync
-pip install -r requirements.txt
-GARMIN_EMAIL=you@example.com GARMIN_PASSWORD='...' python gen_token.py
+Needs Python 3. If `python`/`pip` isn't found, install it first
+(`winget install -e --id Python.Python.3.12`), then **reopen the terminal**.
+
+**Windows (PowerShell):**
+
+```powershell
+cd scripts\garmin-sync
+python -m pip install -r requirements.txt
+$env:GARMIN_EMAIL = "you@example.com"
+$env:GARMIN_PASSWORD = "your-garmin-password"
+python gen_token.py
+# when done, clear the password from the session:
+$env:GARMIN_PASSWORD = $null
 ```
 
-Copy the printed base64 string.
+**macOS / Linux (bash):**
+
+```bash
+cd scripts/garmin-sync
+python3 -m pip install -r requirements.txt
+GARMIN_EMAIL=you@example.com GARMIN_PASSWORD='...' python3 gen_token.py
+```
+
+Answer the MFA prompt if asked, then copy the printed base64 string.
 
 ### 2. Add GitHub Actions secrets
 
