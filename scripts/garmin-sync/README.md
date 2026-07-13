@@ -1,12 +1,24 @@
-# Garmin → Supabase sleep sync
+# Garmin → Supabase sync
 
-A daily [GitHub Actions job](../../.github/workflows/garmin-sleep-sync.yml) pulls
-your Garmin Connect sleep (duration, **Sleep Score**, HRV, resting HR, bed/wake
-times) and upserts it into the `sleep_logs` table.
+Two daily [GitHub Actions](../../.github/workflows/) jobs pull your Garmin Connect
+data and upsert it into Supabase:
 
-It uses the unofficial Garmin Connect API (via [`garminconnect`](https://github.com/cyberjunky/python-garminconnect)).
+- **[Sleep](../../.github/workflows/garmin-sleep-sync.yml)** (`sync_sleep.py`) →
+  `sleep_logs`: duration, **Sleep Score**, HRV, resting HR, bed/wake times.
+- **[Activities](../../.github/workflows/garmin-activity-sync.yml)**
+  (`sync_activities.py`) → `cardio_sessions`: cardio activities
+  (cycling / running / swimming / rowing) with distance, elevation, avg/max HR,
+  HR-zone time, and **Aerobic / Anaerobic Training Effect**. The app uses the
+  Training Effect + zones to classify each ride into the correct cardio
+  adaptation (`classifyCardioAdaptations` in `src/lib/adaptations.ts`) — a hard
+  ride can count toward both VO₂max and anaerobic capacity.
+
+Both use the unofficial Garmin Connect API (via [`garminconnect`](https://github.com/cyberjunky/python-garminconnect)).
 Fine for reading your own account on this single-user app; it can break if Garmin
-changes their internal API (bump the library version if so).
+changes their internal API (bump the library version if so). Both share the same
+secrets and are **idempotent** (sleep upserts on `(user_id, log_date)`; activities
+on `(user_id, garmin_activity_id)`), so re-running is safe. Non-cardio activities
+(tennis, strength, walks) are skipped — those stay manual.
 
 ## How it works
 
@@ -63,8 +75,10 @@ Repo → **Settings → Secrets and variables → Actions → New repository sec
 
 ### 3. Run it
 
-Actions tab → **Garmin sleep sync** → **Run workflow**. Check the logs, then
-confirm rows landed in `sleep_logs`. After that it runs daily at 09:00 UTC.
+Actions tab → **Garmin sleep sync** / **Garmin activity sync** → **Run workflow**.
+Check the logs, then confirm rows landed in `sleep_logs` / `cardio_sessions`.
+After that they run daily (sleep 09:00 UTC, activities 09:20 UTC). Set
+`SYNC_DAYS` higher on a manual run to backfill more history.
 
 ## Troubleshooting
 

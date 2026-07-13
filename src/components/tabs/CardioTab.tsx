@@ -10,6 +10,16 @@ import { Chip } from '../ui/Chip'
 import { HistoryList } from '../ui/HistoryList'
 import type { CardioType } from '../../types'
 
+/** Garmin's Training-Effect label (e.g. "VO2MAX", "AEROBIC_BASE") → readable text. */
+function prettyTeLabel(label: string): string {
+  const titled = label
+    .toLowerCase()
+    .split('_')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ')
+  return titled.replace(/Vo2max/i, 'VO₂max').replace(/Vo2/i, 'VO₂')
+}
+
 export function CardioTab() {
   const [type, setType] = useState<CardioType>('Running')
   const [date, setDate] = useState(today())
@@ -150,6 +160,11 @@ export function CardioTab() {
                 <div className="flex items-center gap-1.5">
                   <span className="text-base">{CARDIO_ICONS[d.type]}</span>
                   <span className="text-sm font-semibold text-primary">{d.type}</span>
+                  {d.source === 'garmin' && (
+                    <span className="text-[10px] font-semibold text-accent bg-accent-l px-1.5 py-0.5 rounded-full">
+                      ⌚ Garmin
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs text-muted">{d.date}</span>
@@ -161,8 +176,15 @@ export function CardioTab() {
                 {formatDurationMins(d.duration)}
                 {d.distance ? ` · ${d.distance} km · ${calcPace(d.duration, d.distance)}` : ''}
                 {d.avgHr ? ` · ❤️ ${d.avgHr} bpm` : ''}
+                {d.elevationGain ? ` · ⛰️ ${Math.round(d.elevationGain)} m` : ''}
                 {d.notes ? ` — ${d.notes}` : ''}
               </p>
+              {(d.aerobicTe != null || d.anaerobicTe != null) && (
+                <p className="text-[11px] text-muted mt-0.5 ml-0.5">
+                  {d.trainingEffectLabel ? `${prettyTeLabel(d.trainingEffectLabel)} · ` : ''}
+                  aerobic {d.aerobicTe ?? '—'} · anaerobic {d.anaerobicTe ?? '—'}
+                </p>
+              )}
             </div>
           )}
         />

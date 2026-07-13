@@ -28,6 +28,24 @@ export interface CardioEntry {
   /** Average heart rate (bpm) for the session. */
   avgHr?: number
   notes?: string
+  /** Where the row came from. `'garmin'` rows carry the Training-Effect fields below. */
+  source?: 'manual' | 'garmin'
+  /** Garmin activity id — the idempotent-sync dedupe key (absent on manual rows). */
+  garminActivityId?: number
+  /** Peak heart rate (bpm). */
+  maxHr?: number
+  /** Elevation gain / denivelation in metres. */
+  elevationGain?: number
+  /** Garmin Aerobic Training Effect (0–5). */
+  aerobicTe?: number
+  /** Garmin Anaerobic Training Effect (0–5). */
+  anaerobicTe?: number
+  /** Garmin's own primary-benefit label, e.g. `VO2MAX`, `TEMPO`, `RECOVERY`. */
+  trainingEffectLabel?: string
+  /** Garmin per-activity training load (EPOC-based). */
+  trainingLoad?: number
+  /** Seconds spent in HR zones 1–5 (Garmin `hrTimeInZone_1..5`). */
+  zoneDistribution?: number[]
 }
 
 /** The nine trainable physical adaptations (Huberman × Galpin framework). */

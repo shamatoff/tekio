@@ -31,7 +31,8 @@ export function classifyWeightSet(reps: number, override?: Adaptation | null): A
 /**
  * Classify a session by duration. Without HR/intensity we use duration as a
  * proxy: long steady state = endurance; medium = VO₂max intervals; short =
- * anaerobic. Shared by cardio and sport sessions.
+ * anaerobic. Shared by cardio and sport sessions, and the fallback for Garmin
+ * rides that lack Training-Effect data.
  */
 export function classifyCardioByDuration(minutes: number): Adaptation {
   if (minutes >= 25) return 'endurance'
@@ -39,8 +40,58 @@ export function classifyCardioByDuration(minutes: number): Adaptation {
   return 'anaerobic_capacity'
 }
 
+/** Training Effect at/above this counts as a real stimulus for that system. */
+export const TE_STIMULUS_THRESHOLD = 2.0
+
+/**
+ * Whether a session's *aerobic* work was high-intensity (VO₂max) rather than
+ * base/endurance. Garmin reports a single aerobic Training Effect, so the
+ * endurance-vs-VO₂max split comes from its primary-benefit label, then the HR
+ * zone distribution; unlabelled aerobic work defaults to base/endurance.
+ */
+function aerobicIsHighIntensity(entry: CardioEntry): boolean {
+  const label = entry.trainingEffectLabel?.toUpperCase() ?? ''
+  if (/RECOVERY|BASE/.test(label)) return false
+  if (/TEMPO|THRESHOLD|VO2|VO₂|ANAEROBIC|SPRINT|SPEED/.test(label)) return true
+  const z = entry.zoneDistribution
+  if (z && z.length >= 5) {
+    const easy = (z[0] ?? 0) + (z[1] ?? 0) // Z1–Z2
+    const hard = (z[3] ?? 0) + (z[4] ?? 0) // Z4–Z5
+    return hard > easy
+  }
+  return false
+}
+
+/**
+ * The cardio adaptations a session counts toward.
+ *
+ * With Garmin Training Effect present: award the dominant system, plus any
+ * system whose TE ≥ {@link TE_STIMULUS_THRESHOLD} — so a hard ride counts as a
+ * full session for *both* VO₂max and anaerobic capacity. The single aerobic TE
+ * maps to endurance or VO₂max by intensity (label / HR zones). Without TE data,
+ * falls back to the duration heuristic (a single adaptation).
+ */
+export function classifyCardioAdaptations(entry: CardioEntry): Adaptation[] {
+  if (entry.aerobicTe == null && entry.anaerobicTe == null) {
+    return [classifyCardioByDuration(entry.duration)]
+  }
+  const aerobic = entry.aerobicTe ?? 0
+  const anaerobic = entry.anaerobicTe ?? 0
+  const aerobicBucket: Adaptation = aerobicIsHighIntensity(entry) ? 'vo2max' : 'endurance'
+
+  const result = new Set<Adaptation>()
+  // A session always trains *something*: the dominant system counts even below
+  // threshold.
+  result.add(anaerobic > aerobic ? 'anaerobic_capacity' : aerobicBucket)
+  // Plus any system that cleared the stimulus threshold.
+  if (aerobic >= TE_STIMULUS_THRESHOLD) result.add(aerobicBucket)
+  if (anaerobic >= TE_STIMULUS_THRESHOLD) result.add('anaerobic_capacity')
+  return [...result]
+}
+
+/** Dominant single adaptation for a session (first of {@link classifyCardioAdaptations}). */
 export function classifyCardio(entry: CardioEntry): Adaptation {
-  return classifyCardioByDuration(entry.duration)
+  return classifyCardioAdaptations(entry)[0]
 }
 
 // ── Coverage ────────────────────────────────────────────────────────────────────
@@ -162,10 +213,11 @@ export function adaptationCoverage(
     }
   }
 
-  // Cardio sessions.
+  // Cardio sessions. A Garmin ride can count toward multiple adaptations (e.g.
+  // VO₂max + anaerobic) when several systems each got a real Training Effect.
   for (const c of cardio) {
     if (!inRange(c.date, weekStart, date)) continue
-    volume[classifyCardio(c)] += 1
+    for (const a of classifyCardioAdaptations(c)) volume[a] += 1
   }
 
   // Sport sessions count as cardio work, classified by duration like a cardio

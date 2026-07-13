@@ -1,0 +1,38 @@
+name: Garmin activity sync
+
+# Pulls Garmin Connect cardio activities (cycling/running/swimming/rowing) with
+# Training Effect + HR zones into Supabase cardio_sessions, to drive the cardio
+# adaptation. See scripts/garmin-sync/README.md for the one-time secret setup
+# (shares the same secrets as the sleep sync).
+
+on:
+  schedule:
+    # 09:20 UTC daily — shortly after the sleep sync, once the overnight watch sync has landed.
+    - cron: '20 9 * * *'
+  workflow_dispatch: # manual "Run workflow" button for testing / backfill
+
+concurrency:
+  group: garmin-activity-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: scripts/garmin-sync/requirements.txt
+
+      - run: pip install -r scripts/garmin-sync/requirements.txt
+
+      - run: python scripts/garmin-sync/sync_activities.py
+        env:
+          GARMIN_TOKENSTORE: ${{ secrets.GARMIN_TOKENSTORE }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TEKIO_USER_ID: ${{ secrets.TEKIO_USER_ID }}
+          SYNC_DAYS: '7'
