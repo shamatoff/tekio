@@ -22,11 +22,14 @@ not a single habit-level flag. Auto-sourced habits stay excluded, same
 double-counting rationale as `muscleCoverage()`. Weights rebalanced to
 sleep 0.45 / mobility 0.15 / sauna 0.15 / cold 0.15 / habits 0.10.
 
-## Follow-ups (not done — pick up in a fresh session)
+## Follow-ups
 
-- **Food / nutrition** — the largest deferred input; its own logging model +
-  targets. `nutrition_logs` table already exists (0 rows). Fold into readiness.
-- **Export/import** — `ExportPane`/`ImportPane` don't yet include sleep/sauna/cold.
+- **Food / nutrition** — spun out into its own brief now that a scoring model is
+  defined: [nutrition-food-recovery-score.md](nutrition-food-recovery-score.md)
+  (Phase 1 FRS bench shipped 2026-07-14; app integration is the remaining work).
+- **Export/import** — DONE (2026-07-14, commit 9f3ac0c): sleep/sauna/cold now
+  round-trip through `ExportPane`/`ImportPane`. Nutrition export/import is tracked
+  in the nutrition brief above.
 
 **Kickoff:** start a fresh session with this file as the brief.
 
