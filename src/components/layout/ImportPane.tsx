@@ -8,7 +8,8 @@ import { saveMobilityEntry } from '../../lib/db/mobility'
 import { saveSportEntry } from '../../lib/db/sport'
 import { saveDonationEntry } from '../../lib/db/donations'
 import { saveWaterEntry } from '../../lib/db/water'
-import type { WeightEntry, BodyweightEntry, CardioEntry, MobilityEntry, SportEntry, DonationEntry, WaterEntry, Program } from '../../types'
+import { saveSleepEntry, saveSaunaEntry, saveColdEntry } from '../../lib/db/recovery'
+import type { WeightEntry, BodyweightEntry, CardioEntry, MobilityEntry, SportEntry, DonationEntry, WaterEntry, SleepEntry, SaunaEntry, ColdEntry, Program } from '../../types'
 import { Btn } from '../ui/Button'
 
 interface ImportPaneProps {
@@ -53,6 +54,11 @@ export function ImportPane({ onClose }: ImportPaneProps) {
       const existingSkKeys = new Set(store.sports.map(s => `${s.date}:${s.sport}`))
       const existingDKeys = new Set(store.donations.map(d => `${d.date}:${d.type}`))
       const existingWaterKeys = new Set(store.water.map(w => `${w.date}:${w.amountMl}`))
+      // Sleep is one row per night (upsert on date); sauna/cold can repeat per day,
+      // so key those on date+duration like water does.
+      const existingSleepDates = new Set(store.sleep.map(s => s.date))
+      const existingSaunaKeys = new Set(store.sauna.map(s => `${s.date}:${s.duration}`))
+      const existingColdKeys = new Set(store.cold.map(c => `${c.date}:${c.duration}`))
 
       const newInWeights = inWeights.filter(w => !existingWKeys.has(`${w.date}:${w.exercise}`))
       const newInBodyweight = ((p.bodyweight as BodyweightEntry[]) || []).filter(b => !existingBDates.has(b.date))
@@ -64,6 +70,9 @@ export function ImportPane({ onClose }: ImportPaneProps) {
       const newInSports = inSports.filter(s => !existingSkKeys.has(`${s.date}:${s.sport}`))
       const newInDonations = ((p.donations as DonationEntry[]) || []).filter(d => !existingDKeys.has(`${d.date}:${d.type}`))
       const newInWater = ((p.water as WaterEntry[]) || []).filter(w => !existingWaterKeys.has(`${w.date}:${w.amountMl}`))
+      const newInSleep = ((p.sleep as SleepEntry[]) || []).filter(s => !existingSleepDates.has(s.date))
+      const newInSauna = ((p.sauna as SaunaEntry[]) || []).filter(s => !existingSaunaKeys.has(`${s.date}:${s.duration}`))
+      const newInCold = ((p.cold as ColdEntry[]) || []).filter(c => !existingColdKeys.has(`${c.date}:${c.duration}`))
 
       const newWeights: WeightEntry[] = mergeById(store.weights, newInWeights)
       const newBodyweight: BodyweightEntry[] = mergeById(store.bodyweight, newInBodyweight)
@@ -72,6 +81,9 @@ export function ImportPane({ onClose }: ImportPaneProps) {
       const newSports: SportEntry[] = mergeById(store.sports, newInSports)
       const newDonations: DonationEntry[] = mergeById(store.donations, newInDonations)
       const newWater: WaterEntry[] = mergeById(store.water, newInWater)
+      const newSleep: SleepEntry[] = mergeById(store.sleep, newInSleep)
+      const newSauna: SaunaEntry[] = mergeById(store.sauna, newInSauna)
+      const newCold: ColdEntry[] = mergeById(store.cold, newInCold)
 
       // Weights: process date-by-date to avoid concurrent session creation race condition
       const byDate = new Map<string, WeightEntry[]>()
@@ -92,6 +104,9 @@ export function ImportPane({ onClose }: ImportPaneProps) {
         ...newInSports.map(s => saveSportEntry(s)),
         ...newInDonations.map(d => saveDonationEntry(d)),
         ...newInWater.map(w => saveWaterEntry(w)),
+        ...newInSleep.map(s => saveSleepEntry(s)),
+        ...newInSauna.map(s => saveSaunaEntry(s)),
+        ...newInCold.map(c => saveColdEntry(c)),
       ])
 
       store.setWeights(newWeights)
@@ -101,6 +116,9 @@ export function ImportPane({ onClose }: ImportPaneProps) {
       store.setSports(newSports)
       store.setDonations(newDonations)
       store.setWater(newWater)
+      store.setSleep(newSleep)
+      store.setSauna(newSauna)
+      store.setCold(newCold)
 
       if (p.program && store.programs.length === 0) {
         await store.saveActiveProgram(p.program as Program)
