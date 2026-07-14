@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { habitPeriodStart, habitProgress, muscleCoverage } from '../lib/utils'
+import { habitPeriodStart, habitProgress, muscleCoverage, recoveryHabitSets } from '../lib/utils'
 import type { HabitProgressContext } from '../lib/utils'
 import type {
   Habit, HabitCompletion, ExerciseMuscleLink, MuscleGroup, WeightEntry, MobilityEntry,
@@ -174,5 +174,55 @@ describe('muscleCoverage', () => {
     const comps: HabitCompletion[] = [{ id: 'c1', habitId: 'ha', periodStart: '2026-06-23', count: 3 }]
     const rows = muscleCoverage([], [], exerciseMuscles, muscleGroups, '2026-06-22', '2026-06-28', habits, comps, {})
     expect(rows.find(r => r.name === 'Chest')!.recovery).toBe(0)
+  })
+})
+
+// ── recoveryHabitSets ─────────────────────────────────────────────────────────
+
+describe('recoveryHabitSets', () => {
+  it('counts in-week bouts of a muscle-linked recovery habit', () => {
+    const habits: Habit[] = [
+      habit({ id: 'hr', autoSource: 'none', contribution: 'recovery', muscleGroupId: 'chest', unit: 'sessions' }),
+    ]
+    const comps: HabitCompletion[] = [
+      { id: 'c1', habitId: 'hr', periodStart: '2026-06-23', count: 1 },
+      { id: 'c2', habitId: 'hr', periodStart: '2026-06-24', count: 1 },
+      { id: 'c3', habitId: 'hr', periodStart: '2026-06-15', count: 1 }, // outside week → excluded
+    ]
+    expect(recoveryHabitSets(habits, comps, exerciseMuscles, muscleGroups, {}, '2026-06-22', '2026-06-28')).toBe(2)
+  })
+
+  it('exercise-linked habit counts when the exercise map has a recovery link', () => {
+    const habits: Habit[] = [
+      habit({ id: 'hx', autoSource: 'none', exerciseId: 'ex1', muscleGroupId: null, unit: 'sessions' }),
+    ]
+    const comps: HabitCompletion[] = [{ id: 'c1', habitId: 'hx', periodStart: '2026-06-23', count: 1 }]
+    const total = recoveryHabitSets(habits, comps, exerciseMuscles, muscleGroups, { ex1: 'Pec Stretch' }, '2026-06-22', '2026-06-28')
+    expect(total).toBe(1)
+  })
+
+  it('exercise-linked habit does not count when the exercise map is stimulus-only, even if habit.contribution says recovery', () => {
+    const habits: Habit[] = [
+      habit({ id: 'hx', autoSource: 'none', exerciseId: 'ex1', muscleGroupId: null, contribution: 'recovery' }),
+    ]
+    const comps: HabitCompletion[] = [{ id: 'c1', habitId: 'hx', periodStart: '2026-06-23', count: 1 }]
+    const total = recoveryHabitSets(habits, comps, exerciseMuscles, muscleGroups, { ex1: 'Bench Press' }, '2026-06-22', '2026-06-28')
+    expect(total).toBe(0)
+  })
+
+  it('auto-sourced recovery habits are excluded to avoid double-counting real logs', () => {
+    const habits: Habit[] = [
+      habit({ id: 'ha', autoSource: 'mobility_minutes', contribution: 'recovery', muscleGroupId: 'chest' }),
+    ]
+    const comps: HabitCompletion[] = [{ id: 'c1', habitId: 'ha', periodStart: '2026-06-23', count: 3 }]
+    expect(recoveryHabitSets(habits, comps, exerciseMuscles, muscleGroups, {}, '2026-06-22', '2026-06-28')).toBe(0)
+  })
+
+  it('sets-unit habits scale with count; others count each tick as one bout', () => {
+    const habits: Habit[] = [
+      habit({ id: 'hr', autoSource: 'none', contribution: 'recovery', muscleGroupId: 'chest', unit: 'sets' }),
+    ]
+    const comps: HabitCompletion[] = [{ id: 'c1', habitId: 'hr', periodStart: '2026-06-23', count: 4 }]
+    expect(recoveryHabitSets(habits, comps, exerciseMuscles, muscleGroups, {}, '2026-06-22', '2026-06-28')).toBe(4)
   })
 })

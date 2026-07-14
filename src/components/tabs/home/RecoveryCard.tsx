@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useAppStore } from '../../../store/app'
 import { usePrefs } from '../../../store/prefs'
-import { startOfWeek, today } from '../../../lib/utils'
+import { startOfWeek, today, recoveryHabitSets } from '../../../lib/utils'
 import { RECOVERY_ICONS, RECOVERY_TARGETS, RECOVERY_WEIGHTS } from '../../../constants/app'
 import { Card, SecTitle } from '../../ui/Card'
 import { Inp } from '../../ui/Input'
@@ -32,6 +32,7 @@ interface RecoveryCardProps {
 export function RecoveryCard({ setTab }: RecoveryCardProps) {
   const {
     sleep, sauna, cold, mobility,
+    habits, habitCompletions, exerciseMuscles, muscleGroups, exerciseNames,
     addSleepEntry, addSaunaEntry, addColdEntry, openEditModal, setToast,
   } = useAppStore()
   const { weekStartDay } = usePrefs()
@@ -65,15 +66,19 @@ export function RecoveryCard({ setTab }: RecoveryCardProps) {
     )
     const sleepSub = perNight.length ? perNight.reduce((a, b) => a + b, 0) / perNight.length : 0
 
+    const habitSets = recoveryHabitSets(habits, habitCompletions, exerciseMuscles, muscleGroups, exerciseNames, weekStart)
+
     const sub = {
       sleep: sleepSub,
       mobility: clamp01(mobMinutes / RECOVERY_TARGETS.mobilityMinutes),
       sauna: clamp01(saunaWk.length / RECOVERY_TARGETS.saunaSessions),
       cold: clamp01(coldWk.length / RECOVERY_TARGETS.coldSessions),
+      habits: clamp01(habitSets / RECOVERY_TARGETS.recoveryHabitSets),
     }
     const readiness = Math.round(
       100 * (sub.sleep * RECOVERY_WEIGHTS.sleep + sub.mobility * RECOVERY_WEIGHTS.mobility +
-        sub.sauna * RECOVERY_WEIGHTS.sauna + sub.cold * RECOVERY_WEIGHTS.cold),
+        sub.sauna * RECOVERY_WEIGHTS.sauna + sub.cold * RECOVERY_WEIGHTS.cold +
+        sub.habits * RECOVERY_WEIGHTS.habits),
     )
     return {
       readiness, sub,
@@ -81,9 +86,10 @@ export function RecoveryCard({ setTab }: RecoveryCardProps) {
       nights, avgHours, avgQuality, avgScore, mobMinutes,
       saunaSessions: saunaWk.length, saunaMin,
       coldSessions: coldWk.length, coldMin,
+      habitSets,
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sleep, sauna, cold, mobility, weekStart])
+  }, [sleep, sauna, cold, mobility, habits, habitCompletions, exerciseMuscles, muscleGroups, exerciseNames, weekStart])
 
   const readinessDisplay = Math.round(useCountUp(agg.readiness))
   const barColor = scoreColor(agg.readiness)
@@ -94,7 +100,7 @@ export function RecoveryCard({ setTab }: RecoveryCardProps) {
     <Card>
       <SecTitle>Recovery · This Week</SecTitle>
       <p className="text-[11px] text-muted mb-3">
-        Readiness rolls up sleep, mobility, sauna and cold against weekly targets.
+        Readiness rolls up sleep, mobility, sauna, cold and recovery habits against weekly targets.
       </p>
 
       {/* Readiness headline */}
@@ -197,6 +203,16 @@ export function RecoveryCard({ setTab }: RecoveryCardProps) {
             onCancel={() => setAdding(null)}
           />
         </ModalityRow>
+
+        {/* Recovery habits (display-only — logged in the Habits tab) */}
+        <ModalityRow
+          icon={RECOVERY_ICONS.habits}
+          name="Habits"
+          sub={agg.sub.habits}
+          stat={agg.habitSets ? `${fmt(agg.habitSets)}×` : '—'}
+          target={`target ${RECOVERY_TARGETS.recoveryHabitSets}×/wk`}
+          onOpenTab={setTab ? () => setTab('Habits') : undefined}
+        />
       </div>
     </Card>
   )

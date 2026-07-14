@@ -57,6 +57,7 @@ export const RECOVERY_ICONS = {
   mobility: '🧘',
   sauna: '🧖',
   cold: '🧊',
+  habits: '✅',
 } as const
 
 /** Weekly targets per modality; a modality's sub-score = achieved / target (capped at 1). */
@@ -69,12 +70,15 @@ export const RECOVERY_TARGETS = {
   saunaSessions: 2,
   /** Target cold-exposure sessions per week. */
   coldSessions: 2,
+  /** Target recovery-tagged manual habit bouts per week. */
+  recoveryHabitSets: 5,
 } as const
 
 /** Weights blending the per-modality sub-scores into the readiness roll-up (sum ≈ 1). */
 export const RECOVERY_WEIGHTS = {
-  sleep: 0.5,
-  mobility: 0.2,
+  sleep: 0.45,
+  mobility: 0.15,
   sauna: 0.15,
   cold: 0.15,
+  habits: 0.1,
 } as const

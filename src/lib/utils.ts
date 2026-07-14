@@ -609,3 +609,35 @@ export function muscleCoverage(
     recovery: +(rec[g.name] ?? 0).toFixed(2),
   }))
 }
+
+/**
+ * Total manual recovery-habit bouts within [weekStartDate, date] — the input to
+ * the Recovery/Readiness axis's "Habits" sub-score. A bout counts if the habit
+ * credits recovery on at least one muscle group (see `habitMuscleContributions`);
+ * exercise-linked habits can be dual-purpose (e.g. Dead Hang = grip stimulus +
+ * shoulder recovery), so this checks the resolved contributions rather than a
+ * single habit-level flag. Auto-sourced habits are excluded — their progress
+ * already derives from real mobility/weight logs counted elsewhere in the
+ * readiness roll-up, so folding them here would double-count.
+ */
+export function recoveryHabitSets(
+  habits: Habit[],
+  habitCompletions: HabitCompletion[],
+  exerciseMuscles: ExerciseMuscleLink[],
+  muscleGroups: MuscleGroup[],
+  exerciseNames: Record<string, string>,
+  weekStartDate: string,
+  date: string = today(),
+): number {
+  const habitById = new Map(habits.map(h => [h.id, h]))
+  let total = 0
+  for (const c of habitCompletions) {
+    if (c.count <= 0 || c.periodStart < weekStartDate || c.periodStart > date) continue
+    const h = habitById.get(c.habitId)
+    if (!h || !h.active || h.autoSource !== 'none') continue
+    const contributions = habitMuscleContributions(h, exerciseMuscles, muscleGroups, exerciseNames)
+    if (!contributions.some(mc => mc.contribution === 'recovery')) continue
+    total += habitCompletionSets(h, c.count)
+  }
+  return total
+}
