@@ -1,7 +1,7 @@
 # Roadmap: TDEE and lean bulk targets — grounded
 
 **Label:** feature
-**Status:** proposed 2026-08-30 (by a shamatoff-os session, at Peter's direction) — awaiting kickoff in a tekio session.
+**Status:** planned — kickoff-ready. Raised 2026-08-30 by a shamatoff-os session at Peter's direction; the numbers go through `/ground` at kickoff.
 
 ## The ask
 
